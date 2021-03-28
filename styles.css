@@ -1,0 +1,46 @@
+.commander-execute-container{
+  z-index: 9;
+  right: 1em;
+  left: auto !important;
+  margin: 5px;
+  cursor: pointer;
+}
+
+.commander-block-relative{
+  position: relative;
+}
+
+.commander-execute-container.rendered{
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.commander-execute-container > button{
+  margin: auto;
+}
+
+.commander-commands{
+  text-align: right;
+}
+
+.commander-commands button{
+  color: var(--text-muted);
+}
+
+.commander-output{
+  color: var(--text-muted);
+  word-break: break-all;
+  white-space: initial;
+  overflow-x: auto;
+  user-select: text;
+  border-radius: 5px;
+  margin: 16px;
+  padding: 2px 8px;
+  background-color: var(--background-secondary-alt);
+  height: inherit;
+}
+
+.commander-commands.border{
+  border: 1px solid var(--text-faint);
+}
