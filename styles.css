@@ -10,7 +10,7 @@
   position: relative;
 }
 
-.commander-execute-container.rendered{
+.commander-block-relative .commander-execute-container{
   position: absolute;
   top: 0;
   right: 0;

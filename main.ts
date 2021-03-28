@@ -1,46 +1,59 @@
-import { App, ButtonComponent, ItemView, MarkdownPostProcessorContext, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, ButtonComponent, ItemView, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import "./lib/icons"
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
-import { spawn } from 'child_process'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 
 interface CommanderPluginSettings {
   enableCopyButton: boolean;
   outputAutoClear: boolean;
   outputMaxLength: number;
-  outputAutoCopy: boolean;
   tmpDir: string;
-  bashExecutable: string;
   shExecutable: string;
-  nodejsExecutable: string;
+  shTemplate: string;
+  bashExecutable: string;
+  bashTemplate: string;
+  jsExecutable: string;
+  jsTemplate: string;
   pythonExecutable: string;
+  pythonTemplate: string;
   goExecutable: string;
+  goTemplate: string;
 }
 
 const DEFAULT_SETTINGS: CommanderPluginSettings = {
   enableCopyButton: true,
   outputAutoClear: false,
   outputMaxLength: 1000,
-  outputAutoCopy: false,
   tmpDir: os.tmpdir(),
-  bashExecutable: '',
   shExecutable: '',
-  nodejsExecutable: '',
+  shTemplate: '#!/bin/sh\n\nset -e\n\n%CONTENT%',
+  bashExecutable: '',
+  bashTemplate: '#!/bin/bash\n\nset -e\n\n%CONTENT%',
+  jsExecutable: '',
+  jsTemplate: '(async () => {\n\t%CONTENT%\n})()',
   pythonExecutable: '',
+  pythonTemplate: '%CONTENT%',
   goExecutable: '',
+  goTemplate: 'package main\n\nimport ("fmt")\n\nfunc main() {\n\t%CONTENT%\n}',
 }
 
 const DEFAULT_LINUX_SETTINGS: CommanderPluginSettings = {
   ...DEFAULT_SETTINGS,
   bashExecutable: "/bin/bash",
   shExecutable: "/bin/sh",
-  nodejsExecutable: "/usr/bin/nodejs",
+  jsExecutable: "/usr/bin/node",
   pythonExecutable: "/usr/bin/python",
-  goExecutable: "/usr/local/go",
+  goExecutable: "/usr/local/go/bin/go",
 }
 const DEFAULT_MAC_SETTINGS: CommanderPluginSettings = {
   ...DEFAULT_SETTINGS,
+  bashExecutable: "/bin/bash",
+  shExecutable: "/bin/sh",
+  jsExecutable: "/usr/local/bin/node",
+  pythonExecutable: "/usr/bin/python",
+  goExecutable: "/usr/local/go/bin",
 }
 const DEFAULT_WINDOWS_SETTINGS: CommanderPluginSettings = {
   ...DEFAULT_SETTINGS,
@@ -48,15 +61,15 @@ const DEFAULT_WINDOWS_SETTINGS: CommanderPluginSettings = {
 
 const VIEW_TYPE_OUTPUT = 'commander-output'
 const SUPPORTED_SCRIPT_TAGS = 'bash|sh|js|javascript|python|go'
+const CONTENT_PLACEHOLDER= '%CONTENT%'
 
 class Script {
   outputView: OutputView;
-  fromLine: number;
-  toLine: number;
   editor: CodeMirror.Editor;
   content: string;
   type: string;
   settings: CommanderPluginSettings;
+  command: ChildProcessWithoutNullStreams;
 
   constructor(outputView: OutputView, settings: CommanderPluginSettings) {
     this.outputView = outputView
@@ -75,65 +88,74 @@ class Script {
     }
   }
 
-  setFromLine(line: number) {
-    this.fromLine = line
-  }
-
-  setToLine(line: number) {
-    this.toLine = line
-  }
-
-  run() {
-    if (this.settings.outputAutoClear) {
-      this.outputView.clear()
-    }
-
-    const id = (new Date()).getTime()
-    const filePath = path.join(os.tmpdir(), `${id}.${this.type}`)
-    fs.writeFileSync(filePath, this.content)
-
-    let command = null
-    
-    switch (this.type) {
-      case 'sh':
-        command = spawn(this.settings.shExecutable, [filePath]);
-        break;
-      case 'bash':
-        command = spawn(this.settings.bashExecutable, [filePath]);
-        break;
-      case 'js':
-      case 'javascript':
-        command = spawn(this.settings.nodejsExecutable, [filePath]);
-        break;
-      case 'python':
-        command = spawn(this.settings.pythonExecutable, [filePath]);
-        break;
-      case 'go':
-        command = spawn(this.settings.goExecutable, ['run', filePath]);
-        break;
-      default:
-        fs.unlinkSync(filePath)
-        return
-    }
-
-    command.stdout.on('data', (data) => {
-      this.outputView.print(data)
-    });
-
-    command.stderr.on('data', (data) => {
-      this.outputView.print(data)
-    });
-
-    command.on('error', (error) => {
-      this.outputView.print(error.message)
-    });
-
-    command.on('exit', (code) => {
-      if (code !== 0) {
-        this.outputView.print(`exit code ${code}\n`)
+  async run(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.settings.outputAutoClear) {
+        this.outputView.clear()
       }
-      fs.unlinkSync(filePath)
-    });
+      const id = (new Date()).getTime()
+      const filePath = path.join(this.settings.tmpDir, `${id}.${this.type}`)
+
+      let executable = null
+      let args = []
+      let fileContent = this.content
+      
+      switch (this.type) {
+        case 'sh':
+          executable = this.settings.shExecutable
+          args = [filePath]
+          fileContent = this.settings.shTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          break;
+        case 'bash':
+          executable = this.settings.bashExecutable
+          args = [filePath]
+          fileContent = this.settings.bashTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          break;
+        case 'js':
+        case 'javascript':
+          executable = this.settings.jsExecutable
+          args = [filePath]
+          fileContent = this.settings.jsTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          break;
+        case 'python':
+          executable = this.settings.pythonExecutable
+          args = [filePath]
+          fileContent = this.settings.pythonTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          break;
+        case 'go':
+          executable = this.settings.goExecutable
+          args = ['run', filePath]
+          fileContent = this.settings.goTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          break;
+        default:
+          return reject(-1)
+      }
+      
+      fs.writeFileSync(filePath, fileContent)
+
+      this.command = spawn(executable, args)
+      this.command.stdout.on('data', (data) => {
+        this.outputView.print(data)
+      });
+
+      this.command.stderr.on('data', (data) => {
+        this.outputView.print(data)
+      });
+
+      this.command.on('error', (error) => {
+        this.outputView.print(error.message)
+      });
+
+      this.command.on('exit', (code) => {
+        fs.unlinkSync(filePath)
+        if (code !== 0) {
+          this.outputView.print(`exit code ${code}\n`)
+          reject(code)
+        } else {
+          resolve()
+        }
+      });
+    })
   }
 }
 
@@ -142,15 +164,12 @@ export default class CommanderPlugin extends Plugin {
   editor: CodeMirror.Editor;
   timer: NodeJS.Timeout;
   widgets: HTMLElement[];
-  scripts: Script[];
-  statusBarItem: HTMLElement;
+  runningScripts: Script[];
   outputView: OutputView;
 
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new SampleSettingTab(this.app, this));
-
-    this.statusBarItem = this.addStatusBarItem()
 
     this.registerCodeMirror((editor: CodeMirror.Editor) => {
       this.editor = editor
@@ -162,6 +181,8 @@ export default class CommanderPlugin extends Plugin {
           (this.outputView = new OutputView(leaf, this))
       );
     })
+
+    this.runningScripts = []
 
     this.initLeaf()
 
@@ -193,39 +214,6 @@ export default class CommanderPlugin extends Plugin {
     }));
   }
 
-  findScripts(content: string) {
-    const scripts = []
-
-    let currentScript = null
-    const lines = content.split('\n')
-    for (let index = 0; index < lines.length; index++) {
-      const line = lines[index]
-
-      const firstLineMatch = line.match('^```('+SUPPORTED_SCRIPT_TAGS+')$')
-      if (firstLineMatch !== null) {
-        currentScript = new Script(this.outputView, this.settings)
-        currentScript.setFromLine(index)
-        currentScript.setType(firstLineMatch[1])
-        continue
-      }
-
-      if (currentScript !== null && line === '```') {
-        currentScript.setToLine(index)
-        scripts.push(currentScript)
-        currentScript = null
-        continue
-      }
-
-      if (currentScript !== null) {
-        currentScript.addContent(line)
-        continue
-      }
-    }
-
-    this.scripts = scripts
-    return this.scripts
-  }
-
   postProcessor(el: HTMLElement) {
     let codeBlocks = Array.from(el.querySelectorAll("code"))
 
@@ -247,11 +235,8 @@ export default class CommanderPlugin extends Plugin {
       script.addContent(codeBlock.getText())
       script.setType(supportedLang.replace('language-', ''))
 
-      const widget = this.createWidget(script)
-      widget.addClass('rendered')
-
       codeBlock.parentElement.addClass('commander-block-relative')
-      codeBlock.parentElement.appendChild(widget)
+      codeBlock.parentElement.appendChild(this.createWidget(script))
     }
   }
 
@@ -262,15 +247,25 @@ export default class CommanderPlugin extends Plugin {
     const runBtn = new ButtonComponent(widget)
       .setButtonText("run")
       .onClick(async () => {
+        if (this.runningScripts.length > 0) {
+          return
+        }
+
         runBtn.setDisabled(true)
         runBtn.setButtonText("running..")
+
+        this.runningScripts.push(script)
 
         try {
           await script.run()
           runBtn.setButtonText("runned!")
         } catch (err) {
+          console.log(err);
+          
           runBtn.setButtonText("failed!")
         } finally {
+          this.stopAllRunningScripts()
+
           setTimeout(() => {
             runBtn.setButtonText("run")
             runBtn.setDisabled(false)
@@ -298,6 +293,13 @@ export default class CommanderPlugin extends Plugin {
     return widget
   }
 
+  stopAllRunningScripts() {
+    for (const script of this.runningScripts) {
+      script.command.kill()
+    }
+    this.runningScripts = []
+  }
+
   async loadSettings() {
     let defaultSettings = DEFAULT_SETTINGS
 
@@ -322,6 +324,7 @@ export default class CommanderPlugin extends Plugin {
 
   onunload() {
     this.clearLeaf()
+    this.stopAllRunningScripts()
   }
 }
 
@@ -364,17 +367,6 @@ class SampleSettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('Output automatic copy')
-      .setDesc('Copy command output into note after execution')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.outputAutoCopy)
-        .onChange(async value => {
-          this.plugin.settings.outputAutoCopy = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
       .setName('Temporary directory')
       .setDesc('The path where command are executed')
       .addText(text => text
@@ -385,12 +377,15 @@ class SampleSettingTab extends PluginSettingTab {
         })
       )
 
-    containerEl.createEl('h2', { text: 'Executable Paths' });
+    new Setting(containerEl)
+      .setHeading()
+      .setName('Sh')
 
     new Setting(containerEl)
-      .setName('sh')
+      .setName('Executable path')
       .addText(text => text
         .setValue(this.plugin.settings.shExecutable)
+        .setPlaceholder('leave empty to disable')
         .onChange(async value => {
           this.plugin.settings.shExecutable = value
           await this.plugin.saveSettings()
@@ -398,9 +393,24 @@ class SampleSettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('bash')
+      .setName('Template')
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.shTemplate)
+        .onChange(async value => {
+          this.plugin.settings.shTemplate = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setHeading()
+      .setName('Bash')
+
+    new Setting(containerEl)
+      .setName('Executable path')
       .addText(text => text
         .setValue(this.plugin.settings.bashExecutable)
+        .setPlaceholder('leave empty to disable')
         .onChange(async value => {
           this.plugin.settings.bashExecutable = value
           await this.plugin.saveSettings()
@@ -408,19 +418,49 @@ class SampleSettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('js / javascript')
-      .addText(text => text
-        .setValue(this.plugin.settings.nodejsExecutable)
+      .setName('Template')
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.bashTemplate)
         .onChange(async value => {
-          this.plugin.settings.nodejsExecutable = value
+          this.plugin.settings.bashTemplate = value
           await this.plugin.saveSettings()
         })
       )
 
     new Setting(containerEl)
-      .setName('python')
+      .setHeading()
+      .setName('JavaScript')
+
+    new Setting(containerEl)
+      .setName('Executable path')
+      .addText(text => text
+        .setValue(this.plugin.settings.jsExecutable)
+        .setPlaceholder('leave empty to disable')
+        .onChange(async value => {
+          this.plugin.settings.jsExecutable = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setName('Template')
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.jsTemplate)
+        .onChange(async value => {
+          this.plugin.settings.jsTemplate = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setHeading()
+      .setName('Python')
+
+    new Setting(containerEl)
+      .setName('Executable path')
       .addText(text => text
         .setValue(this.plugin.settings.pythonExecutable)
+        .setPlaceholder('leave empty to disable')
         .onChange(async value => {
           this.plugin.settings.pythonExecutable = value
           await this.plugin.saveSettings()
@@ -428,11 +468,36 @@ class SampleSettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('go')
+      .setName('Template')
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.pythonTemplate)
+        .onChange(async value => {
+          this.plugin.settings.pythonTemplate = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setHeading()
+      .setName('Go')
+
+    new Setting(containerEl)
+      .setName('Executable path')
       .addText(text => text
         .setValue(this.plugin.settings.goExecutable)
+        .setPlaceholder('leave empty to disable')
         .onChange(async value => {
           this.plugin.settings.goExecutable = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setName('Template')
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.goTemplate)
+        .onChange(async value => {
+          this.plugin.settings.goTemplate = value
           await this.plugin.saveSettings()
         })
       )
