@@ -28,15 +28,15 @@ const DEFAULT_SETTINGS: CommanderPluginSettings = {
   outputMaxLines: 50,
   tmpDir: os.tmpdir(),
   shExecutable: '',
-  shTemplate: '#!/bin/sh\n\nset -e\n\n%CONTENT%',
+  shTemplate: `#!/bin/sh${os.EOL}${os.EOL}set -e${os.EOL}${os.EOL}%CONTENT%`,
   bashExecutable: '',
-  bashTemplate: '#!/bin/bash\n\nset -e\n\n%CONTENT%',
+  bashTemplate: `#!/bin/bash${os.EOL}${os.EOL}set -e${os.EOL}${os.EOL}%CONTENT%`,
   jsExecutable: '',
-  jsTemplate: '(async () => {\n\t%CONTENT%\n})()',
+  jsTemplate: `(async () => {${os.EOL}  %CONTENT%${os.EOL}})()`,
   pythonExecutable: '',
   pythonTemplate: '%CONTENT%',
   goExecutable: '',
-  goTemplate: 'package main\n\nimport ("fmt")\n\nfunc main() {\n\t%CONTENT%\n}',
+  goTemplate: `package main${os.EOL}${os.EOL}import ("fmt")${os.EOL}${os.EOL}func main() {${os.EOL}  %CONTENT%${os.EOL}}`,
 }
 
 const DEFAULT_LINUX_SETTINGS: CommanderPluginSettings = {
