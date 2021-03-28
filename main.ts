@@ -8,7 +8,7 @@ import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 interface CommanderPluginSettings {
   enableCopyButton: boolean;
   outputAutoClear: boolean;
-  outputMaxLength: number;
+  outputMaxLines: number;
   tmpDir: string;
   shExecutable: string;
   shTemplate: string;
@@ -25,7 +25,7 @@ interface CommanderPluginSettings {
 const DEFAULT_SETTINGS: CommanderPluginSettings = {
   enableCopyButton: true,
   outputAutoClear: false,
-  outputMaxLength: 1000,
+  outputMaxLines: 50,
   tmpDir: os.tmpdir(),
   shExecutable: '',
   shTemplate: '#!/bin/sh\n\nset -e\n\n%CONTENT%',
@@ -62,6 +62,9 @@ const DEFAULT_WINDOWS_SETTINGS: CommanderPluginSettings = {
 const VIEW_TYPE_OUTPUT = 'commander-output'
 const SUPPORTED_SCRIPT_TAGS = 'bash|sh|js|javascript|python|go'
 const CONTENT_PLACEHOLDER= '%CONTENT%'
+const TEXT_ANIMATION_TIME = 1000
+const OUTPUT_MIN_LINES = 5
+const OUTPUT_MAX_LINES = 5000
 
 class Script {
   outputView: OutputView;
@@ -135,11 +138,11 @@ class Script {
 
       this.command = spawn(executable, args)
       this.command.stdout.on('data', (data) => {
-        this.outputView.print(data)
+        this.outputView.print(data.toString())
       });
 
       this.command.stderr.on('data', (data) => {
-        this.outputView.print(data)
+        this.outputView.print(data.toString())
       });
 
       this.command.on('error', (error) => {
@@ -149,7 +152,7 @@ class Script {
       this.command.on('exit', (code) => {
         fs.unlinkSync(filePath)
         if (code !== 0) {
-          this.outputView.print(`exit code ${code}\n`)
+          this.outputView.print(`exit code ${code}`)
           reject(code)
         } else {
           resolve()
@@ -266,10 +269,10 @@ export default class CommanderPlugin extends Plugin {
         } finally {
           this.stopAllRunningScripts()
 
+          runBtn.setDisabled(false)
           setTimeout(() => {
             runBtn.setButtonText("run")
-            runBtn.setDisabled(false)
-          }, 1000)
+          }, TEXT_ANIMATION_TIME)
         }
         
       })
@@ -283,10 +286,10 @@ export default class CommanderPlugin extends Plugin {
 
           navigator.clipboard.writeText(script.content)
 
+          copyBtn.setDisabled(false)
           setTimeout(() => {
-            copyBtn.setDisabled(false)
             copyBtn.setButtonText("copy")
-          }, 1000)
+          }, TEXT_ANIMATION_TIME)
         }) 
     }
 
@@ -362,6 +365,23 @@ class SampleSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.outputAutoClear)
         .onChange(async value => {
           this.plugin.settings.outputAutoClear = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
+      .setName('Max output lines')
+      .setDesc('The max number of lines to show in output panel')
+      .addText(text => text
+        .setValue(this.plugin.settings.outputMaxLines.toString())
+        .onChange(async text => {
+          let value = parseInt(text)
+          if (value < OUTPUT_MIN_LINES) {
+            value = OUTPUT_MIN_LINES
+          } else if (value > OUTPUT_MAX_LINES) {
+            value = OUTPUT_MAX_LINES
+          }
+          this.plugin.settings.outputMaxLines = value
           await this.plugin.saveSettings()
         })
       )
@@ -539,18 +559,33 @@ class OutputView extends ItemView {
     buttonContainer.addClass('commander-commands')
     containerEl.appendChild(buttonContainer)
 
-    new ButtonComponent(buttonContainer)
+    const cleanBtn = new ButtonComponent(buttonContainer)
       .setButtonText("clear all")
       .onClick(() => {
+        cleanBtn.setButtonText("done!")
+        cleanBtn.setDisabled(true)
+
         this.clear()
+
+        cleanBtn.setDisabled(false)
+        setTimeout(() => {
+          cleanBtn.setButtonText("clear all")
+        }, TEXT_ANIMATION_TIME)
       })
 
-    new ButtonComponent(buttonContainer)
-      .setButtonText("copy to note")
+    const copyBtn = new ButtonComponent(buttonContainer)
+      .setButtonText("copy all")
       .onClick(() => {
-        this.copyToNote()
-      })
+        copyBtn.setButtonText("copied!")
+        copyBtn.setDisabled(true)        
 
+        navigator.clipboard.writeText(this.outputElem.innerHTML.replace(/<br>/g, os.EOL))
+
+        copyBtn.setDisabled(false)
+        setTimeout(() => {
+          copyBtn.setButtonText("copy all")
+        }, TEXT_ANIMATION_TIME)
+      }) 
 
     this.outputElem = document.createElement("pre");
     this.outputElem.addClass('commander-output')
@@ -560,20 +595,25 @@ class OutputView extends ItemView {
   clear() {
     this.outputElem.innerHTML = ""
   }
-  
-  copyToNote() {
-    let content = this.outputElem.innerHTML
-    content = content.split('<br>').join('\n')
-    this.plugin.editor.replaceRange(content, this.plugin.editor.getCursor());
-  }
 
   print(msg: string) {
-    msg = `${msg}`.replace(/\n/g, '<br>')
+    msg = `${msg}`.replace(new RegExp(os.EOL, 'g'), '<br>')
+    if (this.outputElem.innerHTML.length > 0 && this.outputElem.innerHTML.endsWith('<br>') === false) {
+      this.outputElem.innerHTML += '<br>'
+    }
     this.outputElem.innerHTML += msg
 
-    const overLimit = this.outputElem.innerHTML.length - this.plugin.settings.outputMaxLength
-    if (overLimit > 0) {
-      this.outputElem.innerHTML = this.outputElem.innerHTML.slice(overLimit)
+    this.checkMaxLines()
+  }
+
+  checkMaxLines() {
+    let lines = this.outputElem.innerHTML.split('<br>')
+    const overLimit = lines.length - this.plugin.settings.outputMaxLines
+    if (overLimit <= 0) {
+      return
     }
+
+    lines = lines.slice(overLimit - 1)
+    this.outputElem.innerHTML = lines.join('<br>')
   }
 }

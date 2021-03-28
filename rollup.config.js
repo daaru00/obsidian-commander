@@ -20,7 +20,6 @@ export default {
     banner,
   },
   external: ['obsidian', 'fs', 'path', 'os', 'child_process'],
-  preferBuiltins: true,
   plugins: [
     typescript(),
     nodeResolve({browser: true}),
