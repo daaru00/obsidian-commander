@@ -155,8 +155,6 @@ export default class CommanderPlugin extends Plugin {
     this.registerCodeMirror((editor: CodeMirror.Editor) => {
       this.editor = editor
       this.widgets = []
-      
-      editor.on('change', this.onchange.bind(this))
 
       this.registerView(
         VIEW_TYPE_OUTPUT,
@@ -195,11 +193,6 @@ export default class CommanderPlugin extends Plugin {
     }));
   }
 
-  onchange() {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(this.highlight.bind(this), 500);
-  }
-
   findScripts(content: string) {
     const scripts = []
 
@@ -231,28 +224,6 @@ export default class CommanderPlugin extends Plugin {
 
     this.scripts = scripts
     return this.scripts
-  }
-
-  highlight() {
-    this.editor.operation(() => {
-      for (const widget of this.widgets) {
-        widget.remove()
-      }
-      this.widgets = []
-
-      const scripts = this.findScripts(this.editor.getValue())
-      this.statusBarItem.setText(`${scripts.length} scripts`)
-
-      for (const script of scripts) {
-        const widget = this.createWidget(script)
-        this.editor.addWidget({
-          ch: 0,
-          line: script.fromLine - 1
-        }, widget, false)
-
-        this.widgets.push(widget)
-      }
-    });
   }
 
   postProcessor(el: HTMLElement) {
@@ -288,17 +259,39 @@ export default class CommanderPlugin extends Plugin {
     const widget = document.createElement("div");
     widget.addClass('commander-execute-container')
 
-    new ButtonComponent(widget)
+    const runBtn = new ButtonComponent(widget)
       .setButtonText("run")
-      .onClick(() => {
-        script.run()
+      .onClick(async () => {
+        runBtn.setDisabled(true)
+        runBtn.setButtonText("running..")
+
+        try {
+          await script.run()
+          runBtn.setButtonText("runned!")
+        } catch (err) {
+          runBtn.setButtonText("failed!")
+        } finally {
+          setTimeout(() => {
+            runBtn.setButtonText("run")
+            runBtn.setDisabled(false)
+          }, 1000)
+        }
+        
       })
     
     if (this.settings.enableCopyButton) {
-      new ButtonComponent(widget)
+      const copyBtn = new ButtonComponent(widget)
         .setButtonText("copy")
         .onClick(() => {
+          copyBtn.setButtonText("copied!")
+          copyBtn.setDisabled(true)
+
           navigator.clipboard.writeText(script.content)
+
+          setTimeout(() => {
+            copyBtn.setDisabled(false)
+            copyBtn.setButtonText("copy")
+          }, 1000)
         }) 
     }
 
@@ -325,7 +318,6 @@ export default class CommanderPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
-    this.highlight()
   }
 
   onunload() {
