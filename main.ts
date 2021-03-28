@@ -57,6 +57,7 @@ const DEFAULT_MAC_SETTINGS: CommanderPluginSettings = {
 }
 const DEFAULT_WINDOWS_SETTINGS: CommanderPluginSettings = {
   ...DEFAULT_SETTINGS,
+  // TODO: need a windows user to collect these parameters
 }
 
 const VIEW_TYPE_OUTPUT = 'commander-output'
