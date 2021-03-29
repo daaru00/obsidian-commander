@@ -68,16 +68,13 @@ const OUTPUT_MIN_LINES = 5
 const OUTPUT_MAX_LINES = 5000
 
 class Script {
-  outputView: OutputView;
-  editor: CodeMirror.Editor;
+  plugin: CommanderPlugin;
   content: string;
   type: string;
-  settings: CommanderPluginSettings;
   command: ChildProcessWithoutNullStreams;
 
-  constructor(outputView: OutputView, settings: CommanderPluginSettings) {
-    this.outputView = outputView
-    this.settings = settings
+  constructor(plugin: CommanderPlugin) {
+    this.plugin = plugin
   }
 
   setType(type: string) {
@@ -92,13 +89,17 @@ class Script {
     }
   }
 
+  getSettings(): CommanderPluginSettings {
+    return this.plugin.settings
+  }
+
   async run(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.settings.outputAutoClear) {
-        this.outputView.clear()
+      if (this.getSettings().outputAutoClear && this.plugin.outputView) {
+        this.plugin.outputView.clear()
       }
       const id = (new Date()).getTime()
-      const filePath = path.join(this.settings.tmpDir, `${id}.${this.type}`)
+      const filePath = path.join(this.getSettings().tmpDir, `${id}.${this.type}`)
 
       let executable = null
       let args = []
@@ -106,30 +107,30 @@ class Script {
       
       switch (this.type) {
         case 'sh':
-          executable = this.settings.shExecutable
+          executable = this.getSettings().shExecutable
           args = [filePath]
-          fileContent = this.settings.shTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          fileContent = this.getSettings().shTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
           break;
         case 'bash':
-          executable = this.settings.bashExecutable
+          executable = this.getSettings().bashExecutable
           args = [filePath]
-          fileContent = this.settings.bashTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          fileContent = this.getSettings().bashTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
           break;
         case 'js':
         case 'javascript':
-          executable = this.settings.jsExecutable
+          executable = this.getSettings().jsExecutable
           args = [filePath]
-          fileContent = this.settings.jsTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          fileContent = this.getSettings().jsTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
           break;
         case 'python':
-          executable = this.settings.pythonExecutable
+          executable = this.getSettings().pythonExecutable
           args = [filePath]
-          fileContent = this.settings.pythonTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          fileContent = this.getSettings().pythonTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
           break;
         case 'go':
-          executable = this.settings.goExecutable
+          executable = this.getSettings().goExecutable
           args = ['run', filePath]
-          fileContent = this.settings.goTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
+          fileContent = this.getSettings().goTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
           break;
         default:
           return reject(-1)
@@ -139,27 +140,33 @@ class Script {
 
       this.command = spawn(executable, args)
       this.command.stdout.on('data', (data) => {
-        this.outputView.print(data.toString())
+        this.print(data.toString())
       });
 
       this.command.stderr.on('data', (data) => {
-        this.outputView.print(data.toString())
+        this.print(data.toString())
       });
 
       this.command.on('error', (error) => {
-        this.outputView.print(error.message)
+        this.print(error.message)
       });
 
       this.command.on('exit', (code) => {
         fs.unlinkSync(filePath)
         if (code !== 0) {
-          this.outputView.print(`exit code ${code}`)
+          this.print(`exit code ${code}`)
           reject(code)
         } else {
           resolve()
         }
       });
     })
+  }
+
+  print(msg: string) {
+    if (this.plugin.outputView) {
+      this.plugin.outputView.print(msg)
+    }
   }
 }
 
@@ -175,8 +182,10 @@ export default class CommanderPlugin extends Plugin {
 
     this.registerView(
       VIEW_TYPE_OUTPUT,
-      (leaf: WorkspaceLeaf) =>
-        (this.outputView = new OutputView(leaf, this))
+      (leaf: WorkspaceLeaf) => {
+        this.outputView = new OutputView(leaf, this)
+        return this.outputView
+      }
     );
 
     this.addCommand({
@@ -232,7 +241,7 @@ export default class CommanderPlugin extends Plugin {
         continue
       }
 
-      const script = new Script(this.outputView, this.settings)
+      const script = new Script(this)
       script.addContent(codeBlock.getText())
       script.setType(supportedLang.replace('language-', ''))
 
@@ -547,43 +556,24 @@ class OutputView extends ItemView {
     let { containerEl } = this;
     containerEl.empty();
 
-    if (this.outputElem) {
-      this.outputElem.remove()
-      this.outputElem = null
-    }
-
     const buttonContainer = document.createElement("div")
     buttonContainer.addClass('nav-header')
-    buttonContainer.addClass('commander-commands')
+    buttonContainer.addClass('commander-header')
     containerEl.appendChild(buttonContainer)
 
-    const cleanBtn = new ButtonComponent(buttonContainer)
-      .setButtonText("clear all")
+    new ButtonComponent(buttonContainer)
+      .setIcon("copy")
+      .setTooltip('Copy all')
       .onClick(() => {
-        cleanBtn.setButtonText("done!")
-        cleanBtn.setDisabled(true)
-
-        this.clear()
-
-        cleanBtn.setDisabled(false)
-        setTimeout(() => {
-          cleanBtn.setButtonText("clear all")
-        }, TEXT_ANIMATION_TIME)
-      })
-
-    const copyBtn = new ButtonComponent(buttonContainer)
-      .setButtonText("copy all")
-      .onClick(() => {
-        copyBtn.setButtonText("copied!")
-        copyBtn.setDisabled(true)        
-
         navigator.clipboard.writeText(this.outputElem.innerHTML.replace(/<br>/g, os.EOL))
-
-        copyBtn.setDisabled(false)
-        setTimeout(() => {
-          copyBtn.setButtonText("copy all")
-        }, TEXT_ANIMATION_TIME)
       }) 
+
+    new ButtonComponent(buttonContainer)
+      .setIcon("clear-all")
+      .setTooltip('Clear all')
+      .onClick(() => {
+        this.clear()
+      })
 
     this.outputElem = document.createElement("pre");
     this.outputElem.addClass('commander-output')
