@@ -2,7 +2,8 @@
 
 This [Obsidian.md](https://obsidian.md/) plugin allow to evaluate Sh, Bash, JavaScript, Python and GO code block.
 
-![simple command](./doc/gifs/bash.gif)
+![simple command](./doc/gifs/example.gif)
+
 ## Features
 
 - Evaluate code block
@@ -15,7 +16,7 @@ When a run button in code block is pressed the plugin will create a script file 
 
 Use the "Show console output" command to open a panel that show output and error.
 
-![simple command](./doc/gifs/javascript.gif)
+![handle command output](./doc/gifs/output.gif)
 
 The plugin use script template configuration to setup the running environment, 
 for example for JavaScript the default template is:
@@ -27,7 +28,11 @@ for example for JavaScript the default template is:
 
 This allow you to execute code with Promise support:
 
-![simple command](./doc/gifs/long-running.gif)
+![complex command](./doc/gifs/complex.gif)
+
+Plugin can handle parallels scripts executions:
+
+![parallels commands](./doc/gifs/parallels.gif)
 
 ## Installation
 

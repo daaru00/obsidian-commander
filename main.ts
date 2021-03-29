@@ -214,7 +214,7 @@ export default class CommanderPlugin extends Plugin {
       return
     }
 
-    const leaf = workspace.getRightLeaf(true)
+    const leaf = workspace.getRightLeaf(false)
     if (!leaf) {
       return
     }
@@ -256,7 +256,6 @@ export default class CommanderPlugin extends Plugin {
 
     const runBtn = new ButtonComponent(widget)
       .setIcon("run")
-      .setTooltip('Run code')
       .onClick(async () => {
         runBtn.setDisabled(true)
 
@@ -276,7 +275,6 @@ export default class CommanderPlugin extends Plugin {
     if (this.settings.enableCopyButton) {
       new ButtonComponent(widget)
         .setIcon("copy")
-        .setTooltip('Copy code content')
         .onClick(() => {
           navigator.clipboard.writeText(script.content)
         }) 
