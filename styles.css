@@ -12,8 +12,16 @@
 
 .commander-block-relative .commander-execute-container{
   position: absolute;
-  top: 0;
+  top: -100%;
   right: 0;
+  opacity: 0;
+  animation-delay: 1s;
+  transition: top 200ms, opacity 200ms;
+}
+
+.commander-block-relative:hover .commander-execute-container{
+  top: 0;
+  opacity: 1;
 }
 
 .commander-execute-container > button{
