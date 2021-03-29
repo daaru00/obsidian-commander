@@ -255,48 +255,30 @@ export default class CommanderPlugin extends Plugin {
     widget.addClass('commander-execute-container')
 
     const runBtn = new ButtonComponent(widget)
-      .setButtonText("run")
+      .setIcon("run")
+      .setTooltip('Run code')
       .onClick(async () => {
-        if (this.runningScripts.length > 0) {
-          return
-        }
-
         runBtn.setDisabled(true)
-        runBtn.setButtonText("running..")
 
-        this.runningScripts.push(script)
+        const newScriptsLength = this.runningScripts.push(script)
 
         try {
           await script.run()
-          runBtn.setButtonText("runned!")
         } catch (err) {
           console.log(err);
-          
-          runBtn.setButtonText("failed!")
         } finally {
-          this.stopAllRunningScripts()
+          this.runningScripts.splice(newScriptsLength - 1, 1)
 
           runBtn.setDisabled(false)
-          setTimeout(() => {
-            runBtn.setButtonText("run")
-          }, TEXT_ANIMATION_TIME)
         }
-        
       })
     
     if (this.settings.enableCopyButton) {
-      const copyBtn = new ButtonComponent(widget)
-        .setButtonText("copy")
+      new ButtonComponent(widget)
+        .setIcon("copy")
+        .setTooltip('Copy code content')
         .onClick(() => {
-          copyBtn.setButtonText("copied!")
-          copyBtn.setDisabled(true)
-
           navigator.clipboard.writeText(script.content)
-
-          copyBtn.setDisabled(false)
-          setTimeout(() => {
-            copyBtn.setButtonText("copy")
-          }, TEXT_ANIMATION_TIME)
         }) 
     }
 
