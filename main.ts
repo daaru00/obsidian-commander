@@ -166,8 +166,6 @@ class Script {
 export default class CommanderPlugin extends Plugin {
   settings: CommanderPluginSettings;
   editor: CodeMirror.Editor;
-  timer: NodeJS.Timeout;
-  widgets: HTMLElement[];
   runningScripts: Script[];
   outputView: OutputView;
 
@@ -175,20 +173,15 @@ export default class CommanderPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new SampleSettingTab(this.app, this));
 
-    this.registerCodeMirror((editor: CodeMirror.Editor) => {
-      this.editor = editor
-      this.widgets = []
-
-      this.registerView(
-        VIEW_TYPE_OUTPUT,
-        (leaf: WorkspaceLeaf) =>
-          (this.outputView = new OutputView(leaf, this))
-      );
-    })
-
-    this.runningScripts = []
+    this.registerView(
+      VIEW_TYPE_OUTPUT,
+      (leaf: WorkspaceLeaf) =>
+        (this.outputView = new OutputView(leaf, this))
+    );
 
     this.initLeaf()
+
+    this.runningScripts = []
 
     this.registerMarkdownPostProcessor(this.postProcessor.bind(this))
   }
