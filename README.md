@@ -7,10 +7,13 @@ This [Obsidian.md](https://obsidian.md/) plugin allow to evaluate Sh, Bash, Java
 
 - Evaluate code block
 - Copy code block
+- Show console output
 - See code output
 - Copy code output
 
-When a run button in code block is pressed the plugin will create a script file into temporary directory (`/tmp` by default) and execute it using configured executable path. Output and error will be showed up in a custom view panel.
+When a run button in code block is pressed the plugin will create a script file into temporary directory (`/tmp` by default) and execute it using configured executable path.
+
+Use the "Show console output" command to open a panel that show output and error.
 
 ![simple command](./doc/gifs/javascript.gif)
 

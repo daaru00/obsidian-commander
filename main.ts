@@ -179,7 +179,12 @@ export default class CommanderPlugin extends Plugin {
         (this.outputView = new OutputView(leaf, this))
     );
 
-    this.initLeaf()
+    this.addCommand({
+      id: 'app:show-commander-output',
+      name: 'Show console output',
+      callback: () => this.initLeaf(),
+      hotkeys: []
+    });
 
     this.runningScripts = []
 
@@ -195,20 +200,19 @@ export default class CommanderPlugin extends Plugin {
 
   initLeaf() {
     const { workspace } = this.app
-    this.registerEvent(workspace.on('active-leaf-change', () => {
-      if (workspace.getLeavesOfType(VIEW_TYPE_OUTPUT).length > 0) {
-        return
-      }
 
-      const leaf = workspace.getRightLeaf(true)
-      if (!leaf) {
-        return
-      }
+    if (workspace.getLeavesOfType(VIEW_TYPE_OUTPUT).length > 0) {
+      return
+    }
 
-      leaf.setViewState({
-        type: VIEW_TYPE_OUTPUT,
-      });
-    }));
+    const leaf = workspace.getRightLeaf(true)
+    if (!leaf) {
+      return
+    }
+
+    leaf.setViewState({
+      type: VIEW_TYPE_OUTPUT,
+    });
   }
 
   postProcessor(el: HTMLElement) {
