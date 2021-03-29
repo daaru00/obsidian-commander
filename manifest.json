@@ -3,7 +3,7 @@
 	"name": "Commander",
 	"version": "0.2.0",
 	"minAppVersion": "0.11.5",
-	"description": "Execute bash script from files.",
+	"description": "Evaluate sh,bash,js,python and go code blocks.",
 	"author": "Fabio Gollinucci",
 	"authorUrl": "https://github.com/daaru00",
 	"isDesktopOnly": true
