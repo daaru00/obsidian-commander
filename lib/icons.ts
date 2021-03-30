@@ -2,13 +2,6 @@ import { addIcon } from 'obsidian';
 
 addIcon('stop', `
 <rect
-  style="fill:currentColor;fill-opacity:1;stroke:none;stroke-width:3.61480546;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-  id="rect823"
-  width="18.75"
-  height="18.75"
-  x="40.625"
-  y="40.625" />
-<rect
   style="fill:none;fill-opacity:1;stroke:currentColor;stroke-width:5.0125947;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
   id="rect825"
   width="89.674904"
