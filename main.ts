@@ -1,4 +1,4 @@
-import { App, ButtonComponent, ItemView, Plugin, PluginSettingTab, Setting, TextComponent, WorkspaceLeaf } from 'obsidian';
+import { App, ButtonComponent, ItemView, Notice, Plugin, PluginSettingTab, Setting, TextComponent, WorkspaceLeaf } from 'obsidian';
 import "./lib/icons"
 import * as fs from 'fs'
 import * as path from 'path'
@@ -78,7 +78,11 @@ class Script {
       this.command.on('exit', (code) => {
         fs.unlinkSync(filePath)
         if (code !== 0) {
-          this.print(`exit code ${code}`)
+          if (code === null) {
+            this.print(`stopped`)
+          } else {
+            this.print(`exit code ${code}`)
+          }
           reject(code)
         } else {
           resolve()
@@ -116,6 +120,44 @@ export default class CommanderPlugin extends Plugin {
       id: 'app:show-commander-output',
       name: 'Show console output',
       callback: () => this.initLeaf(),
+      hotkeys: []
+    });
+
+    this.addCommand({
+      id: 'app:clean-commander-scripts',
+      name: 'Clean console output',
+      callback: () => {
+        if (this.outputView) {
+          this.outputView.clear()
+        }
+      },
+      hotkeys: []
+    });
+
+    this.addCommand({
+      id: 'app:copy-commander-scripts',
+      name: 'Copy console output',
+      callback: () => {
+        if (this.outputView) {
+          this.outputView.copyContentToClipboard()
+          new Notice('Console output copied!')
+        }
+      },
+      hotkeys: []
+    });
+
+    this.addCommand({
+      id: 'app:stop-commander-scripts',
+      name: 'Stop all commands',
+      callback: () => {
+        const scriptCount = this.runningScripts.length
+        if (scriptCount === 0) {
+          new Notice('No running scrips found')
+          return
+        }
+        this.stopAllRunningScripts()
+        new Notice(`${scriptCount} scripts stopped`)
+      },
       hotkeys: []
     });
 
@@ -402,7 +444,7 @@ class OutputView extends ItemView {
       .setIcon("copy")
       .setTooltip('Copy all')
       .onClick(() => {
-        navigator.clipboard.writeText(this.outputElem.innerHTML.replace(/<br>/g, os.EOL))
+        this.copyContentToClipboard()
       })
 
     new ButtonComponent(buttonContainer)
@@ -419,6 +461,10 @@ class OutputView extends ItemView {
 
   clear() {
     this.outputElem.innerHTML = ""
+  }
+
+  copyContentToClipboard() {
+    navigator.clipboard.writeText(this.outputElem.innerHTML.replace(/<br>/g, os.EOL))
   }
 
   print(msg: string) {
