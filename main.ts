@@ -103,10 +103,16 @@ export default class CommanderPlugin extends Plugin {
   editor: CodeMirror.Editor;
   runningScripts: Script[];
   outputView: OutputView;
+  statusBarItem: HTMLElement;
 
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new SampleSettingTab(this.app, this));
+
+    this.statusBarItem = this.addStatusBarItem()
+    this.registerInterval(window.setInterval(() => {
+      this.statusBarItem.setText(`${this.runningScripts.length} running scripts`)
+    }, 1000))
 
     this.registerView(
       VIEW_TYPE_OUTPUT,
@@ -227,15 +233,14 @@ export default class CommanderPlugin extends Plugin {
       .onClick(async () => {
         runBtn.setDisabled(true)
 
-        const newScriptsLength = this.runningScripts.push(script)
+        this.runningScripts.push(script)
 
         try {
           await script.run()
         } catch (err) {
           console.log(err);
         } finally {
-          this.runningScripts.splice(newScriptsLength - 1, 1)
-
+          this.runningScripts.splice(this.runningScripts.indexOf(script), 1)
           runBtn.setDisabled(false)
         }
       })
@@ -442,16 +447,25 @@ class OutputView extends ItemView {
 
     new ButtonComponent(buttonContainer)
       .setIcon("copy")
-      .setTooltip('Copy all')
+      .setTooltip('Copy output')
       .onClick(() => {
         this.copyContentToClipboard()
       })
 
     new ButtonComponent(buttonContainer)
       .setIcon("cross")
-      .setTooltip('Clear all')
+      .setTooltip('Clear output')
       .onClick(() => {
         this.clear()
+      })
+
+    new ButtonComponent(buttonContainer)
+      .setIcon("stop")
+      .setTooltip('Stop running scripts')
+      .onClick(() => {
+        if (this.plugin.runningScripts.length > 0) {
+          this.plugin.stopAllRunningScripts()
+        }
       })
 
     this.outputElem = document.createElement("pre");

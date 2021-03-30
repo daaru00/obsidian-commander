@@ -1,17 +1,34 @@
 import { addIcon } from 'obsidian';
 
+addIcon('stop', `
+<rect
+  style="fill:currentColor;fill-opacity:1;stroke:none;stroke-width:3.61480546;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+  id="rect823"
+  width="18.75"
+  height="18.75"
+  x="40.625"
+  y="40.625" />
+<rect
+  style="fill:none;fill-opacity:1;stroke:currentColor;stroke-width:5.0125947;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+  id="rect825"
+  width="89.674904"
+  height="88.737404"
+  x="5.1625481"
+  y="5.6312981" />
+`)
+
 addIcon('add', `
 <path
-     style="fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 86.228814,51.271186 H 9.9576265"
-     id="path817"
-     inkscape:connector-curvature="0" 
+  style="fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+  d="M 86.228814,51.271186 H 9.9576265"
+  id="path817"
+  inkscape:connector-curvature="0" 
 />
-  <path
-     inkscape:connector-curvature="0"
-     id="path834"
-     d="M 48.09322,89.40678 V 13.135592"
-     style="fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" 
+<path
+  inkscape:connector-curvature="0"
+  id="path834"
+  d="M 48.09322,89.40678 V 13.135592"
+  style="fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" 
 />
 `)
 
