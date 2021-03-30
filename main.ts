@@ -307,13 +307,13 @@ class SampleSettingTab extends PluginSettingTab {
     let textComponent: TextComponent
     new Setting(containerEl)
       .setName("New language key")
-      .setDesc("The key must correspond to code block type, multiples values separated by pipe")
+      .setDesc("The key must correspond to code block type")
       .addText(text => {
         textComponent = text
         text.setPlaceholder("js|javascript")
       })
       .addExtraButton(btn => btn
-        //.setIcon('add')
+        .setIcon('add')
         .setTooltip("Add a new language")
         .onClick(async () => {
           const key = textComponent.getValue()
