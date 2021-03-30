@@ -1,69 +1,13 @@
-import { App, ButtonComponent, ItemView, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, ButtonComponent, ItemView, Plugin, PluginSettingTab, Setting, TextComponent, WorkspaceLeaf } from 'obsidian';
 import "./lib/icons"
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-
-interface CommanderPluginSettings {
-  enableCopyButton: boolean;
-  outputAutoClear: boolean;
-  outputMaxLines: number;
-  tmpDir: string;
-  shExecutable: string;
-  shTemplate: string;
-  bashExecutable: string;
-  bashTemplate: string;
-  jsExecutable: string;
-  jsTemplate: string;
-  pythonExecutable: string;
-  pythonTemplate: string;
-  goExecutable: string;
-  goTemplate: string;
-}
-
-const DEFAULT_SETTINGS: CommanderPluginSettings = {
-  enableCopyButton: true,
-  outputAutoClear: false,
-  outputMaxLines: 50,
-  tmpDir: os.tmpdir(),
-  shExecutable: '',
-  shTemplate: `#!/bin/sh${os.EOL}${os.EOL}set -e${os.EOL}${os.EOL}%CONTENT%`,
-  bashExecutable: '',
-  bashTemplate: `#!/bin/bash${os.EOL}${os.EOL}set -e${os.EOL}${os.EOL}%CONTENT%`,
-  jsExecutable: '',
-  jsTemplate: `(async () => {${os.EOL}  %CONTENT%${os.EOL}})()`,
-  pythonExecutable: '',
-  pythonTemplate: '%CONTENT%',
-  goExecutable: '',
-  goTemplate: `package main${os.EOL}${os.EOL}import ("fmt")${os.EOL}${os.EOL}func main() {${os.EOL}  %CONTENT%${os.EOL}}`,
-}
-
-const DEFAULT_LINUX_SETTINGS: CommanderPluginSettings = {
-  ...DEFAULT_SETTINGS,
-  bashExecutable: "/bin/bash",
-  shExecutable: "/bin/sh",
-  jsExecutable: "/usr/bin/node",
-  pythonExecutable: "/usr/bin/python",
-  goExecutable: "/usr/local/go/bin/go",
-}
-const DEFAULT_MAC_SETTINGS: CommanderPluginSettings = {
-  ...DEFAULT_SETTINGS,
-  bashExecutable: "/bin/bash",
-  shExecutable: "/bin/sh",
-  jsExecutable: "/usr/local/bin/node",
-  pythonExecutable: "/usr/bin/python",
-  goExecutable: "/usr/local/go/bin",
-}
-const DEFAULT_WINDOWS_SETTINGS: CommanderPluginSettings = {
-  ...DEFAULT_SETTINGS,
-  // TODO: need a windows user to collect these parameters
-}
+import { getLanguageSettings, getAllSupportedLanguages, PluginSettings } from './settings'
+import { DEFAULT_SETTINGS, CONTENT_PLACEHOLDER, FILE_PLACEHOLDER } from './settings'
 
 const VIEW_TYPE_OUTPUT = 'commander-output'
-const SUPPORTED_SCRIPT_TAGS = 'bash|sh|js|javascript|python|go'
-const CONTENT_PLACEHOLDER= '%CONTENT%'
-const TEXT_ANIMATION_TIME = 1000
 const OUTPUT_MIN_LINES = 5
 const OUTPUT_MAX_LINES = 5000
 
@@ -89,53 +33,33 @@ class Script {
     }
   }
 
-  getSettings(): CommanderPluginSettings {
-    return this.plugin.settings
-  }
-
   async run(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.getSettings().outputAutoClear && this.plugin.outputView) {
+      if (this.plugin.settings.outputAutoClear && this.plugin.outputView) {
         this.plugin.outputView.clear()
       }
-      const id = (new Date()).getTime()
-      const filePath = path.join(this.getSettings().tmpDir, `${id}.${this.type}`)
 
-      let executable = null
-      let args = []
-      let fileContent = this.content
-      
-      switch (this.type) {
-        case 'sh':
-          executable = this.getSettings().shExecutable
-          args = [filePath]
-          fileContent = this.getSettings().shTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
-          break;
-        case 'bash':
-          executable = this.getSettings().bashExecutable
-          args = [filePath]
-          fileContent = this.getSettings().bashTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
-          break;
-        case 'js':
-        case 'javascript':
-          executable = this.getSettings().jsExecutable
-          args = [filePath]
-          fileContent = this.getSettings().jsTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
-          break;
-        case 'python':
-          executable = this.getSettings().pythonExecutable
-          args = [filePath]
-          fileContent = this.getSettings().pythonTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
-          break;
-        case 'go':
-          executable = this.getSettings().goExecutable
-          args = ['run', filePath]
-          fileContent = this.getSettings().goTemplate.replace(CONTENT_PLACEHOLDER, fileContent)
-          break;
-        default:
-          return reject(-1)
+      const langSettings = getLanguageSettings(this.plugin.settings, this.type)
+      if (!langSettings) {
+        return
       }
-      
+
+      const id = (new Date()).getTime()
+      const filePath = path.join(this.plugin.settings.tmpDir, `${id}.${this.type}`)
+
+      const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, filePath)
+      let args = cmd.split(' ')
+      const executable = args.shift()
+
+      if (!executable) {
+        return
+      }
+
+      let fileContent = this.content
+      if (langSettings.template) {
+        fileContent = langSettings.template.replace(CONTENT_PLACEHOLDER, fileContent)
+      }
+
       fs.writeFileSync(filePath, fileContent)
 
       this.command = spawn(executable, args)
@@ -171,7 +95,7 @@ class Script {
 }
 
 export default class CommanderPlugin extends Plugin {
-  settings: CommanderPluginSettings;
+  settings: PluginSettings;
   editor: CodeMirror.Editor;
   runningScripts: Script[];
   outputView: OutputView;
@@ -231,9 +155,11 @@ export default class CommanderPlugin extends Plugin {
       return;
     }
 
+    const supportedLanguages = getAllSupportedLanguages(this.settings)
+
     for (const codeBlock of codeBlocks) {
       const supportedLang = Array.from(codeBlock.classList).find(cls => {
-        const match = cls.match('^language-('+SUPPORTED_SCRIPT_TAGS+')$')
+        const match = cls.match('^language-(' + supportedLanguages + ')$')
         return match !== null
       })
 
@@ -271,13 +197,13 @@ export default class CommanderPlugin extends Plugin {
           runBtn.setDisabled(false)
         }
       })
-    
+
     if (this.settings.enableCopyButton) {
       new ButtonComponent(widget)
         .setIcon("copy")
         .onClick(() => {
           navigator.clipboard.writeText(script.content)
-        }) 
+        })
     }
 
     return widget
@@ -291,21 +217,12 @@ export default class CommanderPlugin extends Plugin {
   }
 
   async loadSettings() {
-    let defaultSettings = DEFAULT_SETTINGS
-
-    switch (os.platform()) {
-      case 'darwin':
-        defaultSettings = DEFAULT_MAC_SETTINGS
-        break;
-      case 'linux':
-        defaultSettings = DEFAULT_LINUX_SETTINGS
-        break;
-      case 'win32':
-        defaultSettings = DEFAULT_WINDOWS_SETTINGS
-        break;
+    let settings = await this.loadData()
+    if (Object.keys(settings).length === 0) {
+      settings = DEFAULT_SETTINGS
     }
 
-    this.settings = Object.assign({}, defaultSettings, await this.loadData());
+    this.settings = settings
   }
 
   async saveSettings() {
@@ -330,9 +247,6 @@ class SampleSettingTab extends PluginSettingTab {
     let { containerEl } = this;
 
     containerEl.empty();
-
-    containerEl.createEl('h1', { text: 'Commander' });
-    containerEl.createEl('h2', { text: 'General Settings' });
 
     new Setting(containerEl)
       .setName('Enable copy button')
@@ -383,128 +297,71 @@ class SampleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings()
         })
       )
+    
+    const languagesEl = window.createDiv()
+    for (const key in this.plugin.settings.languages) {
+      this.addLanguageSettings(languagesEl, key)
+    }
+    containerEl.appendChild(languagesEl)
 
+    let textComponent: TextComponent
     new Setting(containerEl)
-      .setHeading()
-      .setName('Sh')
+      .setName("New language key")
+      .setDesc("The key must correspond to code block type, multiples values separated by pipe")
+      .addText(text => {
+        textComponent = text
+        text.setPlaceholder("js|javascript")
+      })
+      .addExtraButton(btn => btn
+        //.setIcon('add')
+        .setTooltip("Add a new language")
+        .onClick(async () => {
+          const key = textComponent.getValue()
 
-    new Setting(containerEl)
-      .setName('Executable path')
+          this.plugin.settings.languages[key] = {
+            executable: key.split('|').shift() + ' ' + FILE_PLACEHOLDER,
+            template: CONTENT_PLACEHOLDER
+          }
+          await this.plugin.saveSettings()
+
+          this.addLanguageSettings(languagesEl, textComponent.getValue())
+          textComponent.setValue('')
+        })
+      )
+  }
+
+  addLanguageSettings(containerEl: HTMLElement, key: string) {
+    const languagesSettingsContainer = containerEl.createEl('div', { cls: ['commander-lang-settings'] })
+    languagesSettingsContainer.createEl('h2', { text: key.replace(/\|/g, ' ') });
+
+    new Setting(languagesSettingsContainer)
+      .setName('Executable')
+      .setDesc(`Use ${FILE_PLACEHOLDER} as script file path placeholder`)
       .addText(text => text
-        .setValue(this.plugin.settings.shExecutable)
-        .setPlaceholder('leave empty to disable')
+        .setValue(this.plugin.settings.languages[key].executable)
         .onChange(async value => {
-          this.plugin.settings.shExecutable = value
+          this.plugin.settings.languages[key].executable = value
           await this.plugin.saveSettings()
         })
       )
 
-    new Setting(containerEl)
+    new Setting(languagesSettingsContainer)
       .setName('Template')
+      .setDesc(`Use ${CONTENT_PLACEHOLDER} as script file path placeholder`)
       .addTextArea(textArea => textArea
-        .setValue(this.plugin.settings.shTemplate)
+        .setValue(this.plugin.settings.languages[key].template)
         .onChange(async value => {
-          this.plugin.settings.shTemplate = value
+          this.plugin.settings.languages[key].template = value
           await this.plugin.saveSettings()
         })
       )
 
-    new Setting(containerEl)
-      .setHeading()
-      .setName('Bash')
-
-    new Setting(containerEl)
-      .setName('Executable path')
-      .addText(text => text
-        .setValue(this.plugin.settings.bashExecutable)
-        .setPlaceholder('leave empty to disable')
-        .onChange(async value => {
-          this.plugin.settings.bashExecutable = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setName('Template')
-      .addTextArea(textArea => textArea
-        .setValue(this.plugin.settings.bashTemplate)
-        .onChange(async value => {
-          this.plugin.settings.bashTemplate = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setHeading()
-      .setName('JavaScript')
-
-    new Setting(containerEl)
-      .setName('Executable path')
-      .addText(text => text
-        .setValue(this.plugin.settings.jsExecutable)
-        .setPlaceholder('leave empty to disable')
-        .onChange(async value => {
-          this.plugin.settings.jsExecutable = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setName('Template')
-      .addTextArea(textArea => textArea
-        .setValue(this.plugin.settings.jsTemplate)
-        .onChange(async value => {
-          this.plugin.settings.jsTemplate = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setHeading()
-      .setName('Python')
-
-    new Setting(containerEl)
-      .setName('Executable path')
-      .addText(text => text
-        .setValue(this.plugin.settings.pythonExecutable)
-        .setPlaceholder('leave empty to disable')
-        .onChange(async value => {
-          this.plugin.settings.pythonExecutable = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setName('Template')
-      .addTextArea(textArea => textArea
-        .setValue(this.plugin.settings.pythonTemplate)
-        .onChange(async value => {
-          this.plugin.settings.pythonTemplate = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setHeading()
-      .setName('Go')
-
-    new Setting(containerEl)
-      .setName('Executable path')
-      .addText(text => text
-        .setValue(this.plugin.settings.goExecutable)
-        .setPlaceholder('leave empty to disable')
-        .onChange(async value => {
-          this.plugin.settings.goExecutable = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(containerEl)
-      .setName('Template')
-      .addTextArea(textArea => textArea
-        .setValue(this.plugin.settings.goTemplate)
-        .onChange(async value => {
-          this.plugin.settings.goTemplate = value
+    new Setting(languagesSettingsContainer)
+      .addButton(btn => btn
+        .setButtonText("Remove language")
+        .onClick(async () => {
+          languagesSettingsContainer.remove()
+          delete this.plugin.settings.languages[key]
           await this.plugin.saveSettings()
         })
       )
@@ -546,10 +403,10 @@ class OutputView extends ItemView {
       .setTooltip('Copy all')
       .onClick(() => {
         navigator.clipboard.writeText(this.outputElem.innerHTML.replace(/<br>/g, os.EOL))
-      }) 
+      })
 
     new ButtonComponent(buttonContainer)
-      .setIcon("clear-all")
+      .setIcon("cross")
       .setTooltip('Clear all')
       .onClick(() => {
         this.clear()

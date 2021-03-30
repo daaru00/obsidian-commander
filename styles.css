@@ -48,3 +48,13 @@
   background-color: var(--background-secondary-alt);
   height: inherit;
 }
+
+.commander-lang-settings {
+  border-width: 1px 0;
+  border-style: solid;
+  border-color: var(--background-modifier-border);
+}
+.commander-lang-settings .setting-item {
+  border: 0 !important;
+  padding-top: 1em;
+}
