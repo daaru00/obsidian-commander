@@ -265,7 +265,7 @@ export default class CommanderPlugin extends Plugin {
 
   async loadSettings() {
     let settings = await this.loadData()
-    if (Object.keys(settings).length === 0) {
+    if (!settings || Object.keys(settings).length === 0) {
       settings = DEFAULT_SETTINGS
     }
 
