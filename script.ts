@@ -3,6 +3,7 @@ import * as path from 'path'
 import CommanderPlugin from "main"
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import { CONTENT_PLACEHOLDER, FILE_PLACEHOLDER, getLanguageSettings } from "settings"
+import { Notice } from 'obsidian'
 
 export default class Script {
   plugin: CommanderPlugin;
@@ -34,18 +35,17 @@ export default class Script {
 
       const langSettings = getLanguageSettings(this.plugin.settings, this.type)
       if (!langSettings) {
-        return
+        return reject('Language not supported')
       }
 
       const fileName = `${(new Date()).getTime()}.${this.type}`
       const filePath = path.join(this.plugin.settings.workingDirectory, fileName)
 
-      const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, fileName)
-      let args = cmd.split(' ')
-      const executable = args.shift()
-
-      if (!executable) {
-        return
+      const block = this.plugin.settings.wordsBlacklist.some(words => this.content.includes(words))
+      if (block) {
+        const msg = 'Script execution blocked'
+        new Notice(msg)
+        return reject(msg)
       }
 
       let fileContent = this.content
@@ -54,6 +54,14 @@ export default class Script {
       }
 
       fs.writeFileSync(filePath, fileContent)
+
+      const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, fileName)
+      let args = cmd.split(' ')
+      const executable = args.shift()
+
+      if (!executable) {
+        return reject('No executable found in file placeholder')
+      }
 
       this.command = spawn(executable, args, {
         cwd: this.plugin.settings.workingDirectory,

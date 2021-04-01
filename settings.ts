@@ -16,6 +16,7 @@ export interface PluginSettings {
   outputMaxLines: number;
   workingDirectory: string;
   scriptTimeout: number;
+  wordsBlacklist: string[];
   env: { [key: string]: string };
   languages: { [lang: string]: PluginLanguageSettings }
 }
@@ -29,7 +30,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   enableOutputAutoClear: false,
   outputMaxLines: 50,
   workingDirectory: os.tmpdir(),
-  scriptTimeout: 0,
+  scriptTimeout: 300,
+  wordsBlacklist: ['sudo'],
   env: {},
   languages: {
     'sh': {
@@ -167,6 +169,19 @@ export default class SettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
+    new Setting(containerEl)
+      .setName('Words blacklist')
+      .setDesc(`Block code execution that match these words (one per line)`)
+      .addTextArea(textArea => textArea
+        .setValue(this.plugin.settings.wordsBlacklist.join(os.EOL))
+        .onChange(async value => {
+          this.plugin.settings.wordsBlacklist = value.split(os.EOL)
+          await this.plugin.saveSettings()
+        })
+      )
+
+    containerEl.createEl('h3', {text: 'Environment variables', cls: ['commander-settings-title']})
+
     const envEl = window.createDiv()
     for (const key in this.plugin.settings.env) {
       this.addEnvVariableSettings(envEl, key)
@@ -197,6 +212,8 @@ export default class SettingTab extends PluginSettingTab {
           envTextComponent.setValue('')
         })
       )
+
+    containerEl.createEl('h3', {text: 'Supported languages', cls: ['commander-settings-title']})
 
     const languagesEl = window.createDiv()
     for (const key in this.plugin.settings.languages) {
@@ -276,8 +293,8 @@ export default class SettingTab extends PluginSettingTab {
 
     new Setting(settingsContainer)
       .setName('Executable')
-      .setDesc(`Use ${FILE_PLACEHOLDER} as script file path placeholder`)
       .addText(text => text
+        .setPlaceholder('exec '+FILE_PLACEHOLDER)
         .setValue(this.plugin.settings.languages[key].executable)
         .onChange(async value => {
           this.plugin.settings.languages[key].executable = value
@@ -287,8 +304,8 @@ export default class SettingTab extends PluginSettingTab {
 
     new Setting(settingsContainer)
       .setName('Template')
-      .setDesc(`Use ${CONTENT_PLACEHOLDER} as script file path placeholder`)
       .addTextArea(textArea => textArea
+        .setPlaceholder(CONTENT_PLACEHOLDER)
         .setValue(this.plugin.settings.languages[key].template)
         .onChange(async value => {
           this.plugin.settings.languages[key].template = value
