@@ -49,12 +49,19 @@
   height: inherit;
 }
 
-.commander-lang-settings-header {
-  display: flex;
-  justify-content: space-between;
+.commander-lang-settings-header, .commander-env-settings {
   border-width: 1px 0 0 0;
   border-style: solid;
   border-color: var(--background-modifier-border);
+}
+
+.commander-lang-settings-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.commander-env-settings {
+  padding-top: 1em;
 }
 
 .commander-lang-settings-header .setting-item{
@@ -74,6 +81,7 @@
   background-color: transparent !important;
   color: var(--text-muted);
 }
+
 .commander-lang-delete-btn:hover {
   color: var(--text-normal);
 }

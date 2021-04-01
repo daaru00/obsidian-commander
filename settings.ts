@@ -14,8 +14,10 @@ export interface PluginSettings {
   enableCopyButton: boolean;
   enableOutputAutoClear: boolean;
   outputMaxLines: number;
-  tmpDir: string;
-  languages: {[lang: string]: PluginLanguageSettings}
+  workingDirectory: string;
+  scriptTimeout: number;
+  env: { [key: string]: string };
+  languages: { [lang: string]: PluginLanguageSettings }
 }
 
 export const CONTENT_PLACEHOLDER = '%CONTENT%'
@@ -26,7 +28,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   enableCopyButton: true,
   enableOutputAutoClear: false,
   outputMaxLines: 50,
-  tmpDir: os.tmpdir(),
+  workingDirectory: os.tmpdir(),
+  scriptTimeout: 0,
+  env: {},
   languages: {
     'sh': {
       executable: `sh ${FILE_PLACEHOLDER}`,
@@ -136,35 +140,83 @@ export default class SettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('Temporary directory')
-      .setDesc('The path where command are executed')
+      .setName('Working directory')
+      .setDesc('The path where code scripts are executed')
       .addText(text => text
-        .setValue(this.plugin.settings.tmpDir)
+        .setValue(this.plugin.settings.workingDirectory)
         .onChange(async value => {
-          this.plugin.settings.tmpDir = value
+          this.plugin.settings.workingDirectory = value
           await this.plugin.saveSettings()
         })
       )
-    
+
+    new Setting(containerEl)
+      .setName('Script timeout')
+      .setDesc('Execution timeout in seconds, 0 to disable')
+      .addDropdown(dropdown => dropdown
+        .addOptions({
+          '0': "disabled",
+          '60': "1 minute",
+          '300': "5 minutes",
+          '600': "10 minutes",
+          '1800': "30 minutes",
+        })
+        .setValue(this.plugin.settings.scriptTimeout.toString())
+        .onChange(async (value) => {
+          this.plugin.settings.scriptTimeout = parseInt(value);
+          await this.plugin.saveSettings();
+        }));
+
+    const envEl = window.createDiv()
+    for (const key in this.plugin.settings.env) {
+      this.addEnvVariableSettings(envEl, key)
+    }
+    containerEl.appendChild(envEl)
+
+    let envTextComponent: TextComponent
+    new Setting(containerEl)
+      .setName("Add env variable")
+      .setDesc("The key must correspond to code block type")
+      .addText(text => {
+        envTextComponent = text
+        text.setPlaceholder("EXAMPLE_ENV_VAR")
+      })
+      .addExtraButton(btn => btn
+        .setIcon('add')
+        .setTooltip("Add a env variable")
+        .onClick(async () => {
+          const key = envTextComponent.getValue()
+          if (key.trim().length === 0) {
+            return
+          }
+
+          this.plugin.settings.env[key] = ''
+          await this.plugin.saveSettings()
+
+          this.addEnvVariableSettings(envEl, envTextComponent.getValue())
+          envTextComponent.setValue('')
+        })
+      )
+
     const languagesEl = window.createDiv()
     for (const key in this.plugin.settings.languages) {
       this.addLanguageSettings(languagesEl, key)
     }
     containerEl.appendChild(languagesEl)
 
-    let textComponent: TextComponent
+    let langTextComponent: TextComponent
     new Setting(containerEl)
       .setName("Add new language support")
       .setDesc("The key must correspond to code block type")
       .addText(text => {
-        textComponent = text
+        langTextComponent = text
         text.setPlaceholder("js|javascript")
       })
       .addExtraButton(btn => btn
         .setIcon('add')
         .setTooltip("Add a new language")
         .onClick(async () => {
-          const key = textComponent.getValue()
+          const key = langTextComponent.getValue()
           if (key.trim().length === 0) {
             return
           }
@@ -175,32 +227,54 @@ export default class SettingTab extends PluginSettingTab {
           }
           await this.plugin.saveSettings()
 
-          this.addLanguageSettings(languagesEl, textComponent.getValue())
-          textComponent.setValue('')
+          this.addLanguageSettings(languagesEl, langTextComponent.getValue())
+          langTextComponent.setValue('')
+        })
+      )
+  }
+
+  addEnvVariableSettings(containerEl: HTMLElement, key: string) {
+    const settingsContainer = containerEl.createEl('div', { cls: ['commander-env-settings'] })
+
+    new Setting(settingsContainer)
+      .setName(key)
+      .addText(text => text
+        .setValue(this.plugin.settings.env[key])
+        .onChange(async value => {
+          this.plugin.settings.env[key] = value
+          await this.plugin.saveSettings()
+        })
+      )
+      .addExtraButton(btn => btn
+        .setIcon('trash')
+        .setTooltip('Delete env variable')
+        .onClick(async () => {
+          settingsContainer.remove()
+          delete this.plugin.settings.env[key]
+          await this.plugin.saveSettings()
         })
       )
   }
 
   addLanguageSettings(containerEl: HTMLElement, key: string) {
-    const languagesSettingsContainer = containerEl.createEl('div', { cls: ['commander-lang-settings'] })
+    const settingsContainer = containerEl.createEl('div', { cls: ['commander-lang-settings'] })
 
-    const languagesSettingsHeader = languagesSettingsContainer.createEl('div', { cls: ['commander-lang-settings-header'] })
-    languagesSettingsHeader.createEl('h3', { text: key.replace(/\|/g, ' ') })
-    
-    
-    new Setting(languagesSettingsHeader)
+    const settingsHeader = settingsContainer.createEl('div', { cls: ['commander-lang-settings-header'] })
+    settingsHeader.createEl('h3', { text: key.replace(/\|/g, ' ') })
+
+    new Setting(settingsHeader)
       .addButton(btn => btn
         .setIcon('trash')
         .setClass('commander-lang-delete-btn')
         .setTooltip('Delete language')
         .onClick(async () => {
-          languagesSettingsContainer.remove()
+          settingsContainer.remove()
           delete this.plugin.settings.languages[key]
           await this.plugin.saveSettings()
         })
       )
 
-    new Setting(languagesSettingsContainer)
+    new Setting(settingsContainer)
       .setName('Executable')
       .setDesc(`Use ${FILE_PLACEHOLDER} as script file path placeholder`)
       .addText(text => text
@@ -211,7 +285,7 @@ export default class SettingTab extends PluginSettingTab {
         })
       )
 
-    new Setting(languagesSettingsContainer)
+    new Setting(settingsContainer)
       .setName('Template')
       .setDesc(`Use ${CONTENT_PLACEHOLDER} as script file path placeholder`)
       .addTextArea(textArea => textArea

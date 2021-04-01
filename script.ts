@@ -37,10 +37,10 @@ export default class Script {
         return
       }
 
-      const id = (new Date()).getTime()
-      const filePath = path.join(this.plugin.settings.tmpDir, `${id}.${this.type}`)
+      const fileName = `${(new Date()).getTime()}.${this.type}`
+      const filePath = path.join(this.plugin.settings.workingDirectory, fileName)
 
-      const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, filePath)
+      const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, fileName)
       let args = cmd.split(' ')
       const executable = args.shift()
 
@@ -55,7 +55,11 @@ export default class Script {
 
       fs.writeFileSync(filePath, fileContent)
 
-      this.command = spawn(executable, args)
+      this.command = spawn(executable, args, {
+        cwd: this.plugin.settings.workingDirectory,
+        timeout: this.plugin.settings.scriptTimeout * 1000, // settings is in seconds, prop in milliseconds
+        env: this.plugin.settings.env,
+      })
       this.command.stdout.on('data', (data) => {
         this.print(data.toString())
       });
