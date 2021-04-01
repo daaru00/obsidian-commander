@@ -10,8 +10,9 @@ export interface PluginLanguageSettings {
 }
 
 export interface PluginSettings {
+  enableStatusBarItem: boolean;
   enableCopyButton: boolean;
-  outputAutoClear: boolean;
+  enableOutputAutoClear: boolean;
   outputMaxLines: number;
   tmpDir: string;
   languages: {[lang: string]: PluginLanguageSettings}
@@ -21,8 +22,9 @@ export const CONTENT_PLACEHOLDER = '%CONTENT%'
 export const FILE_PLACEHOLDER = '%FILE%'
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+  enableStatusBarItem: true,
   enableCopyButton: true,
-  outputAutoClear: false,
+  enableOutputAutoClear: false,
   outputMaxLines: 50,
   tmpDir: os.tmpdir(),
   languages: {
@@ -84,6 +86,17 @@ export default class SettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
+      .setName('Enable status bar item')
+      .setDesc('Add a status bar item with running script count')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.enableStatusBarItem)
+        .onChange(async value => {
+          this.plugin.settings.enableStatusBarItem = value
+          await this.plugin.saveSettings()
+        })
+      )
+
+    new Setting(containerEl)
       .setName('Enable copy button')
       .setDesc('Add a copy button to code blocks')
       .addToggle(toggle => toggle
@@ -95,12 +108,12 @@ export default class SettingTab extends PluginSettingTab {
       )
 
     new Setting(containerEl)
-      .setName('Output automatic clean')
+      .setName('Enable automatic output clean')
       .setDesc('Clear the output panel content before new executions')
       .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.outputAutoClear)
+        .setValue(this.plugin.settings.enableOutputAutoClear)
         .onChange(async value => {
-          this.plugin.settings.outputAutoClear = value
+          this.plugin.settings.enableOutputAutoClear = value
           await this.plugin.saveSettings()
         })
       )

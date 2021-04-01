@@ -16,9 +16,14 @@ export default class CommanderPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new SettingTab(this.app, this));
 
-    this.statusBarItem = this.addStatusBarItem()
+    if (this.settings.enableStatusBarItem) {
+      this.initStatusBarItem()
+    }
+
     this.registerInterval(window.setInterval(() => {
-      this.statusBarItem.setText(`${this.runningScripts.length} running scripts`)
+      if (this.statusBarItem) {
+        this.statusBarItem.setText(`${this.runningScripts.length} running scripts`)
+      }
     }, 1000))
 
     this.registerView(
@@ -79,11 +84,20 @@ export default class CommanderPlugin extends Plugin {
     this.registerMarkdownPostProcessor(this.postProcessor.bind(this))
   }
 
-  clearLeaf() {
-    const { workspace } = this.app
-    workspace
-      .getLeavesOfType(VIEW_TYPE_OUTPUT)
-      .forEach((leaf) => leaf.detach());
+  initStatusBarItem() {
+    if (this.statusBarItem) {
+      return
+    }
+
+    this.statusBarItem = this.addStatusBarItem()
+  }
+
+  clearStatusBarItem() {
+    if (!this.statusBarItem) {
+      return
+    }
+    this.statusBarItem.remove()
+    this.statusBarItem = null
   }
 
   initLeaf() {
@@ -101,6 +115,13 @@ export default class CommanderPlugin extends Plugin {
     leaf.setViewState({
       type: VIEW_TYPE_OUTPUT,
     });
+  }
+
+  clearLeaf() {
+    const { workspace } = this.app
+    workspace
+      .getLeavesOfType(VIEW_TYPE_OUTPUT)
+      .forEach((leaf) => leaf.detach());
   }
 
   postProcessor(el: HTMLElement) {
@@ -180,6 +201,12 @@ export default class CommanderPlugin extends Plugin {
   }
 
   async saveSettings() {
+    if (this.settings.enableStatusBarItem) {
+      this.initStatusBarItem()
+    } else {
+      this.clearStatusBarItem()
+    }
+
     await this.saveData(this.settings);
   }
 

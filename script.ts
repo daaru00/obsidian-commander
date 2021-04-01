@@ -28,7 +28,7 @@ export default class Script {
 
   async run(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.plugin.settings.outputAutoClear && this.plugin.outputView) {
+      if (this.plugin.settings.enableOutputAutoClear && this.plugin.outputView) {
         this.plugin.outputView.clear()
       }
 
