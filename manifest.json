@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-commander",
 	"name": "Commander",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"minAppVersion": "0.11.9",
 	"description": "Evaluate sh,bash,js,python and go code blocks.",
 	"author": "Fabio Gollinucci",
