@@ -1,22 +1,22 @@
-.commander-execute-container{
-  z-index: 9;
-  right: 1em;
-  left: auto !important;
-  margin: 5px;
-  cursor: pointer;
-}
-
 .commander-block-relative{
   position: relative;
 }
 
 .commander-block-relative .commander-execute-container{
   position: absolute;
-  top: -100%;
+  top: -10px;
   right: 0;
   opacity: 0;
-  animation-delay: 1s;
-  transition: top 200ms, opacity 200ms;
+  transition-delay: 500ms;
+  transition: top 100ms, opacity 100ms;
+}
+
+.commander-execute-container{
+  z-index: 9;
+  right: 1em;
+  left: auto !important;
+  margin: 5px;
+  cursor: pointer;
 }
 
 .commander-block-relative:hover .commander-execute-container{
@@ -49,12 +49,31 @@
   height: inherit;
 }
 
-.commander-lang-settings {
-  border-width: 1px 0;
+.commander-lang-settings-header {
+  display: flex;
+  justify-content: space-between;
+  border-width: 1px 0 0 0;
   border-style: solid;
   border-color: var(--background-modifier-border);
 }
+
+.commander-lang-settings-header .setting-item{
+  border: 0;
+}
+
+.commander-lang-settings {
+  border: 0;
+}
+
 .commander-lang-settings .setting-item {
   border: 0 !important;
   padding-top: 1em;
+}
+
+.commander-lang-delete-btn {
+  background-color: transparent !important;
+  color: var(--text-muted);
+}
+.commander-lang-delete-btn:hover {
+  color: var(--text-normal);
 }

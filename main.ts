@@ -126,8 +126,8 @@ export default class CommanderPlugin extends Plugin {
       script.addContent(codeBlock.getText())
       script.setType(supportedLang.replace('language-', ''))
 
-      codeBlock.parentElement.addClass('commander-block-relative')
-      codeBlock.parentElement.appendChild(this.createWidget(script))
+      codeBlock.parentElement.parentElement.addClass('commander-block-relative')
+      codeBlock.parentElement.parentElement.appendChild(this.createWidget(script))
     }
   }
 

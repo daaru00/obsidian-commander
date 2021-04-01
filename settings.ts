@@ -141,7 +141,7 @@ export default class SettingTab extends PluginSettingTab {
 
     let textComponent: TextComponent
     new Setting(containerEl)
-      .setName("New language key")
+      .setName("Add new language support")
       .setDesc("The key must correspond to code block type")
       .addText(text => {
         textComponent = text
@@ -152,6 +152,9 @@ export default class SettingTab extends PluginSettingTab {
         .setTooltip("Add a new language")
         .onClick(async () => {
           const key = textComponent.getValue()
+          if (key.trim().length === 0) {
+            return
+          }
 
           this.plugin.settings.languages[key] = {
             executable: key.split('|').shift() + ' ' + FILE_PLACEHOLDER,
@@ -167,7 +170,22 @@ export default class SettingTab extends PluginSettingTab {
 
   addLanguageSettings(containerEl: HTMLElement, key: string) {
     const languagesSettingsContainer = containerEl.createEl('div', { cls: ['commander-lang-settings'] })
-    languagesSettingsContainer.createEl('h2', { text: key.replace(/\|/g, ' ') });
+
+    const languagesSettingsHeader = languagesSettingsContainer.createEl('div', { cls: ['commander-lang-settings-header'] })
+    languagesSettingsHeader.createEl('h3', { text: key.replace(/\|/g, ' ') })
+    
+    
+    new Setting(languagesSettingsHeader)
+      .addButton(btn => btn
+        .setIcon('trash')
+        .setClass('commander-lang-delete-btn')
+        .setTooltip('Delete language')
+        .onClick(async () => {
+          languagesSettingsContainer.remove()
+          delete this.plugin.settings.languages[key]
+          await this.plugin.saveSettings()
+        })
+      )
 
     new Setting(languagesSettingsContainer)
       .setName('Executable')
@@ -187,16 +205,6 @@ export default class SettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.languages[key].template)
         .onChange(async value => {
           this.plugin.settings.languages[key].template = value
-          await this.plugin.saveSettings()
-        })
-      )
-
-    new Setting(languagesSettingsContainer)
-      .addButton(btn => btn
-        .setButtonText("Remove language")
-        .onClick(async () => {
-          languagesSettingsContainer.remove()
-          delete this.plugin.settings.languages[key]
           await this.plugin.saveSettings()
         })
       )
