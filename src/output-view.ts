@@ -2,6 +2,12 @@ import * as os from 'os'
 import CommanderPlugin from './main';
 import { ButtonComponent, ItemView, WorkspaceLeaf } from "obsidian";
 
+// https://github.com/chalk/ansi-regex/blob/main/index.js#L3
+export const ANSI_CODE_REGEX = [
+	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
+].join('|')
+
 export const VIEW_TYPE_OUTPUT = 'commander-output'
 
 export default class OutputView extends ItemView {
@@ -71,7 +77,9 @@ export default class OutputView extends ItemView {
 	}
 
 	print(msg: string): void {
-		msg = `${msg}`.replace(new RegExp(os.EOL, 'g'), '<br>')
+		msg = msg.replace(new RegExp(ANSI_CODE_REGEX, 'g'), '') // remove ANSI control codes
+		msg = msg.replace(new RegExp(os.EOL, 'g'), '<br>') // replace enw line with br
+		
 		if (this.outputElem.innerHTML.length > 0 && this.outputElem.innerHTML.endsWith('<br>') === false) {
 			this.outputElem.innerHTML += '<br>'
 		}
