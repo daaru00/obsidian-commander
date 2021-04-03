@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import CommanderPlugin from "main"
+import CommanderPlugin from "./main"
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { CONTENT_PLACEHOLDER, FILE_PLACEHOLDER, getLanguageSettings } from "settings"
+import { CONTENT_PLACEHOLDER, FILE_PLACEHOLDER, getLanguageSettings } from "./settings"
 import { Notice } from 'obsidian'
 
 const ARG_REGEX_QUOTED = /^"[^"]*"$/;
@@ -63,14 +63,14 @@ export default class Script {
 			const args: string[] = []
 			let argPart = ""
 
-			cmd.split(" ").forEach(function (arg) {
+			cmd.split(" ").forEach(function (arg: string) {
 				if ((ARG_REGEX_QUOTED.test(arg) || ARG_REGEX.test(arg)) && !argPart) {
 					args.push(arg)
 				} else {
 					argPart = argPart ? argPart + " " + arg : arg
-					if (/"$/.test(argPart)) {
+					if (argPart.endsWith('')) {
 						args.push(argPart)
-						argPart = ""
+						argPart = ''
 					}
 				}
 			})
@@ -83,7 +83,10 @@ export default class Script {
 			this.command = spawn(executable, args, {
 				cwd: this.plugin.settings.workingDirectory,
 				timeout: this.plugin.settings.scriptTimeout * 1000, // settings is in seconds, prop in milliseconds
-				env: this.plugin.settings.env,
+				env: {
+          ...process.env, // pass current environment variable for PATH, GOPATH..
+          ...this.plugin.settings.env
+        },
 			})
 			this.command.stdout.on('data', (data) => {
 				this.print(data.toString())

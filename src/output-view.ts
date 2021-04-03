@@ -1,5 +1,5 @@
 import * as os from 'os'
-import CommanderPlugin from "main";
+import CommanderPlugin from './main';
 import { ButtonComponent, ItemView, WorkspaceLeaf } from "obsidian";
 
 export const VIEW_TYPE_OUTPUT = 'commander-output'

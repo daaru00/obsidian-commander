@@ -1,9 +1,10 @@
 import { ButtonComponent, Notice, Plugin, WorkspaceLeaf } from 'obsidian';
 import "./lib/icons"
-import SettingTab, { getAllSupportedLanguages, PluginSettings } from './settings'
+import { getAllSupportedLanguages, PluginSettings } from './settings'
+import SettingTab from './settings-tab'
 import { DEFAULT_SETTINGS } from './settings'
-import Script from 'script'
-import OutputView, { VIEW_TYPE_OUTPUT } from 'output';
+import Script from './script'
+import OutputView, { VIEW_TYPE_OUTPUT } from './output-view';
 
 export default class CommanderPlugin extends Plugin {
 	settings: PluginSettings;
