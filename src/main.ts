@@ -115,6 +115,7 @@ export default class CommanderPlugin extends Plugin {
 
 		leaf.setViewState({
 			type: VIEW_TYPE_OUTPUT,
+      active: true,
 		});
 	}
 

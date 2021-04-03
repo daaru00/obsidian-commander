@@ -41,8 +41,7 @@ export default class Script {
 				return reject('Language not supported')
 			}
 
-			const fileName = `${(new Date()).getTime()}.${this.type}`
-			const filePath = path.join(this.plugin.settings.workingDirectory, fileName)
+      // Check blacklisted words
 
 			const block = this.plugin.settings.wordsBlacklist.some(words => this.content.includes(words))
 			if (block) {
@@ -51,6 +50,11 @@ export default class Script {
 				return reject(msg)
 			}
 
+      // Write code script file on disk
+
+      const fileName = `${(new Date()).getTime()}.${this.type}`
+			const filePath = path.join(this.plugin.settings.workingDirectory, fileName)
+
 			let fileContent = this.content
 			if (langSettings.template) {
 				fileContent = langSettings.template.replace(CONTENT_PLACEHOLDER, fileContent)
@@ -58,12 +62,13 @@ export default class Script {
 
 			fs.writeFileSync(filePath, fileContent)
 
+      // Prepare command and arguments
+
 			const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, fileName)
 
 			const args: string[] = []
 			let argPart = ""
-
-			cmd.split(" ").forEach(function (arg: string) {
+			cmd.split(" ").forEach((arg: string) => {
 				if ((ARG_REGEX_QUOTED.test(arg) || ARG_REGEX.test(arg)) && !argPart) {
 					args.push(arg)
 				} else {
@@ -80,14 +85,19 @@ export default class Script {
 				return reject('No executable found in file placeholder')
 			}
 
+      // Execute command
+
 			this.command = spawn(executable, args, {
 				cwd: this.plugin.settings.workingDirectory,
 				timeout: this.plugin.settings.scriptTimeout * 1000, // settings is in seconds, prop in milliseconds
 				env: {
-          ...process.env, // pass current environment variable for PATH, GOPATH..
+          ...process.env, // pass current environment variables (PATH, GOPATH..)
           ...this.plugin.settings.env
         },
 			})
+
+      // Attach to process events
+
 			this.command.stdout.on('data', (data) => {
 				this.print(data.toString())
 			});
@@ -98,6 +108,12 @@ export default class Script {
 
 			this.command.on('error', (error) => {
 				this.print(error.message)
+
+        // Check if command didn't start
+        // (for example due an ENOENT error)
+        if (!this.command.pid) {
+          reject(error.message)
+        }
 			});
 
 			this.command.on('exit', (code) => {
