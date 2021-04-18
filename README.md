@@ -1,22 +1,14 @@
 # Obsidian Commander Plugin
 
-This [Obsidian.md](https://obsidian.md/) plugin allow to evaluate Sh, Bash, JavaScript, Python and GO code block.
+This [Obsidian.md](https://obsidian.md/) plugin allow to evaluate Sh, Bash, JavaScript, Python, PHP and GO code blocks.
 
-![simple command](./doc/gifs/example.gif)
-
-## Features
-
-- Evaluate code block
-- Copy code block
-- Show console output
-- See code output
-- Copy code output
+## Usage
 
 When a run button in code block is pressed the plugin will create a script file into temporary directory (`/tmp` by default) and execute it using configured executable path.
 
 Use the "Show console output" command to open a panel that show output and error.
 
-![handle command output](./doc/gifs/output.gif)
+![simple command](./doc/gifs/multiple-languages.gif)
 
 The plugin use script template configuration to setup the running environment, 
 for example for JavaScript the default template is:
@@ -25,10 +17,6 @@ for example for JavaScript the default template is:
   %CONTENT%
 })()
 ```
-
-This allow you to execute code with Promise support:
-
-![complex command](./doc/gifs/complex.gif)
 
 Plugin can handle parallels scripts executions:
 
