@@ -35,6 +35,10 @@ General configurations allow to enable/disable the copy button, configure output
 
 ![general settings](./doc/imgs/general-settings.png)
 
+Also environment variables can be configured:
+
+![env settings](./doc/imgs/env-settings.png)
+
 Each supported languages has a configurations section that allow you to configure the executable path and the script file template. Use the `%CONTENT%` keyword as a placeholder of code block content that will be executed.
 
 ![languages settings](./doc/imgs/languages-settings.png)
