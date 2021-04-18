@@ -2,6 +2,14 @@
 
 This [Obsidian.md](https://obsidian.md/) plugin allow to evaluate Sh, Bash, JavaScript, Python, PHP and GO code blocks.
 
+## Requirements
+
+For every languages you want to support you need the corresponding runtime installed locally (php, nodejs, python, go..).
+
+## Installation
+
+Download zip archive from [GitHub releases page](https://github.com/daaru00/obsidian-commander/releases) and extract it into `<vault>/.obsidian/plugins` directory.
+
 ## Usage
 
 When a run button in code block is pressed the plugin will create a script file into temporary directory (`/tmp` by default) and execute it using configured executable path.
@@ -21,11 +29,6 @@ for example for JavaScript the default template is:
 Plugin can handle parallels scripts executions:
 
 ![parallels commands](./doc/gifs/parallels.gif)
-
-## Installation
-
-Download zip archive from [GitHub releases page](https://github.com/daaru00/obsidian-commander/releases) and extract it into `<vault>/.obsidian/plugins` directory.
-
 ## Configurations
 
 General configurations allow to enable/disable the copy button, configure output panel behavior and configure the temporary script directory.
