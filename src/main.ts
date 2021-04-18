@@ -1,10 +1,10 @@
-import { ButtonComponent, Notice, Plugin, WorkspaceLeaf } from 'obsidian';
-import "./lib/icons"
+import { ButtonComponent, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
+import './lib/icons'
 import { getAllSupportedLanguages, PluginSettings } from './settings'
 import SettingTab from './settings-tab'
 import { DEFAULT_SETTINGS } from './settings'
 import Script from './script'
-import OutputView, { VIEW_TYPE_OUTPUT } from './output-view';
+import OutputView, { VIEW_TYPE_OUTPUT } from './output-view'
 
 export default class CommanderPlugin extends Plugin {
 	settings: PluginSettings;
@@ -14,8 +14,8 @@ export default class CommanderPlugin extends Plugin {
 	statusBarItem: HTMLElement;
 
 	async onload(): Promise<void> {
-		await this.loadSettings();
-		this.addSettingTab(new SettingTab(this.app, this));
+		await this.loadSettings()
+		this.addSettingTab(new SettingTab(this.app, this))
 
 		if (this.settings.enableStatusBarItem) {
 			this.initStatusBarItem()
@@ -33,14 +33,14 @@ export default class CommanderPlugin extends Plugin {
 				this.outputView = new OutputView(leaf, this)
 				return this.outputView
 			}
-		);
+		)
 
 		this.addCommand({
 			id: 'app:show-commander-output',
 			name: 'Show console output',
 			callback: () => this.initLeaf(),
 			hotkeys: []
-		});
+		})
 
 		this.addCommand({
 			id: 'app:clean-commander-scripts',
@@ -51,7 +51,7 @@ export default class CommanderPlugin extends Plugin {
 				}
 			},
 			hotkeys: []
-		});
+		})
 
 		this.addCommand({
 			id: 'app:copy-commander-scripts',
@@ -63,7 +63,7 @@ export default class CommanderPlugin extends Plugin {
 				}
 			},
 			hotkeys: []
-		});
+		})
 
 		this.addCommand({
 			id: 'app:stop-commander-scripts',
@@ -78,7 +78,7 @@ export default class CommanderPlugin extends Plugin {
 				new Notice(`${scriptCount} scripts stopped`)
 			},
 			hotkeys: []
-		});
+		})
 
 		this.runningScripts = []
 
@@ -116,21 +116,21 @@ export default class CommanderPlugin extends Plugin {
 		leaf.setViewState({
 			type: VIEW_TYPE_OUTPUT,
       active: true,
-		});
+		})
 	}
 
 	clearLeaf(): void {
 		const { workspace } = this.app
 		workspace
 			.getLeavesOfType(VIEW_TYPE_OUTPUT)
-			.forEach((leaf) => leaf.detach());
+			.forEach((leaf) => leaf.detach())
 	}
 
 	postProcessor(el: HTMLElement): void {
-		const codeBlocks = Array.from(el.querySelectorAll("code"))
+		const codeBlocks = Array.from(el.querySelectorAll('code'))
 
 		if (!codeBlocks.length) {
-			return;
+			return
 		}
 
 		const supportedLanguages = getAllSupportedLanguages(this.settings)
@@ -155,11 +155,11 @@ export default class CommanderPlugin extends Plugin {
 	}
 
 	createWidget(script: Script): HTMLElement {
-		const widget = document.createElement("div");
+		const widget = document.createElement('div')
 		widget.addClass('commander-execute-container')
 
 		const runBtn = new ButtonComponent(widget)
-			.setIcon("run")
+			.setIcon('run')
 			.onClick(async () => {
 				runBtn.setDisabled(true)
 
@@ -168,7 +168,7 @@ export default class CommanderPlugin extends Plugin {
 				try {
 					await script.run()
 				} catch (err) {
-					console.log(err);
+					console.log(err)
 				} finally {
 					this.runningScripts.splice(this.runningScripts.indexOf(script), 1)
 					runBtn.setDisabled(false)
@@ -177,7 +177,7 @@ export default class CommanderPlugin extends Plugin {
 
 		if (this.settings.enableCopyButton) {
 			new ButtonComponent(widget)
-				.setIcon("copy")
+				.setIcon('copy')
 				.onClick(() => {
 					navigator.clipboard.writeText(script.content)
 				})
@@ -194,7 +194,7 @@ export default class CommanderPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData())
 	}
 
 	async saveSettings(): Promise<void> {
@@ -204,7 +204,7 @@ export default class CommanderPlugin extends Plugin {
 			this.clearStatusBarItem()
 		}
 
-		await this.saveData(this.settings);
+		await this.saveData(this.settings)
 	}
 
 	onunload(): void {

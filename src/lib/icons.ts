@@ -1,4 +1,4 @@
-import { addIcon } from 'obsidian';
+import { addIcon } from 'obsidian'
 
 addIcon('stop', `
 <rect

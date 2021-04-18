@@ -1,5 +1,3 @@
-import CommanderPlugin from './main'
-import { App, PluginSettingTab, Setting, TextComponent } from 'obsidian'
 import * as os from 'os'
 
 export interface PluginLanguageSettings {
@@ -65,7 +63,7 @@ export function getLanguageSettings(settings: PluginSettings, type: string): Plu
 	for (const key in settings.languages) {
 		const match = type.match('^' + key + '$')
 		if (match !== null) {
-			return settings.languages[key];
+			return settings.languages[key]
 		}
 	}
 	return null

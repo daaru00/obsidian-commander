@@ -1,12 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import CommanderPlugin from "./main"
+import CommanderPlugin from './main'
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { CONTENT_PLACEHOLDER, FILE_PLACEHOLDER, getLanguageSettings } from "./settings"
+import { CONTENT_PLACEHOLDER, FILE_PLACEHOLDER, getLanguageSettings } from './settings'
 import { Notice } from 'obsidian'
 
-const ARG_REGEX_QUOTED = /^"[^"]*"$/;
-const ARG_REGEX = /^([^"]|[^"].*?[^"])$/;
+const ARG_REGEX_QUOTED = /^"[^"]*"$/
+const ARG_REGEX = /^([^"]|[^"].*?[^"])$/
 
 export default class Script {
 	plugin: CommanderPlugin;
@@ -67,12 +67,12 @@ export default class Script {
 			const cmd = langSettings.executable.replace(FILE_PLACEHOLDER, fileName)
 
 			const args: string[] = []
-			let argPart = ""
-			cmd.split(" ").forEach((arg: string) => {
+			let argPart = ''
+			cmd.split(' ').forEach((arg: string) => {
 				if ((ARG_REGEX_QUOTED.test(arg) || ARG_REGEX.test(arg)) && !argPart) {
 					args.push(arg)
 				} else {
-					argPart = argPart ? argPart + " " + arg : arg
+					argPart = argPart ? argPart + ' ' + arg : arg
 					if (argPart.endsWith('')) {
 						args.push(argPart)
 						argPart = ''
@@ -100,11 +100,11 @@ export default class Script {
 
 			this.command.stdout.on('data', (data) => {
 				this.print(data.toString())
-			});
+			})
 
 			this.command.stderr.on('data', (data) => {
 				this.print(data.toString())
-			});
+			})
 
 			this.command.on('error', (error) => {
 				this.print(error.message)
@@ -114,13 +114,13 @@ export default class Script {
         if (!this.command.pid) {
           reject(error.message)
         }
-			});
+			})
 
 			this.command.on('exit', (code) => {
 				fs.unlinkSync(filePath)
 				if (code !== 0) {
 					if (code === null) {
-						this.print(`stopped`)
+						this.print('stopped')
 					} else {
 						this.print(`exit code ${code}`)
 					}
@@ -128,7 +128,7 @@ export default class Script {
 				} else {
 					resolve()
 				}
-			});
+			})
 		})
 	}
 

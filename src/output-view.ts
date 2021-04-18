@@ -1,6 +1,6 @@
 import * as os from 'os'
-import CommanderPlugin from './main';
-import { ButtonComponent, ItemView, WorkspaceLeaf } from "obsidian";
+import CommanderPlugin from './main'
+import { ButtonComponent, ItemView, WorkspaceLeaf } from 'obsidian'
 
 // https://github.com/chalk/ansi-regex/blob/main/index.js#L3
 export const ANSI_CODE_REGEX = [
@@ -15,47 +15,47 @@ export default class OutputView extends ItemView {
 	plugin: CommanderPlugin
 
 	constructor(leaf: WorkspaceLeaf, plugin: CommanderPlugin) {
-		super(leaf);
+		super(leaf)
 		this.plugin = plugin
 	}
 
 	getViewType(): string {
-		return VIEW_TYPE_OUTPUT;
+		return VIEW_TYPE_OUTPUT
 	}
 
 	getDisplayText(): string {
-		return 'Commander';
+		return 'Commander'
 	}
 
 	getIcon(): string {
-		return "console";
+		return 'console'
 	}
 
 	async onOpen(): Promise<void> {
-		const { containerEl } = this;
-		containerEl.empty();
+		const { containerEl } = this
+		containerEl.empty()
 
-		const buttonContainer = document.createElement("div")
+		const buttonContainer = document.createElement('div')
 		buttonContainer.addClass('nav-header')
 		buttonContainer.addClass('commander-header')
 		containerEl.appendChild(buttonContainer)
 
 		new ButtonComponent(buttonContainer)
-			.setIcon("copy")
+			.setIcon('copy')
 			.setTooltip('Copy output')
 			.onClick(() => {
 				this.copyContentToClipboard()
 			})
 
 		new ButtonComponent(buttonContainer)
-			.setIcon("cross")
+			.setIcon('cross')
 			.setTooltip('Clear output')
 			.onClick(() => {
 				this.clear()
 			})
 
 		new ButtonComponent(buttonContainer)
-			.setIcon("stop")
+			.setIcon('stop')
 			.setTooltip('Stop running scripts')
 			.onClick(() => {
 				if (this.plugin.runningScripts.length > 0) {
@@ -63,13 +63,13 @@ export default class OutputView extends ItemView {
 				}
 			})
 
-		this.outputElem = document.createElement("pre");
+		this.outputElem = document.createElement('pre')
 		this.outputElem.addClass('commander-output')
 		containerEl.appendChild(this.outputElem)
 	}
 
 	clear(): void {
-		this.outputElem.innerHTML = ""
+		this.outputElem.innerHTML = ''
 	}
 
 	copyContentToClipboard(): void {

@@ -10,14 +10,14 @@ export default class SettingTab extends PluginSettingTab {
 	plugin: CommanderPlugin;
 
 	constructor(app: App, plugin: CommanderPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
+		super(app, plugin)
+		this.plugin = plugin
 	}
 
 	display(): void {
-		const { containerEl } = this;
+		const { containerEl } = this
 
-		containerEl.empty();
+		containerEl.empty()
 
 		new Setting(containerEl)
 			.setName('Enable status bar item')
@@ -85,21 +85,21 @@ export default class SettingTab extends PluginSettingTab {
 			.setDesc('Execution timeout in seconds, 0 to disable')
 			.addDropdown(dropdown => dropdown
 				.addOptions({
-					'0': "disabled",
-					'60': "1 minute",
-					'300': "5 minutes",
-					'600': "10 minutes",
-					'1800': "30 minutes",
+					'0': 'disabled',
+					'60': '1 minute',
+					'300': '5 minutes',
+					'600': '10 minutes',
+					'1800': '30 minutes',
 				})
 				.setValue(this.plugin.settings.scriptTimeout.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.scriptTimeout = parseInt(value);
-					await this.plugin.saveSettings();
-				}));
+					this.plugin.settings.scriptTimeout = parseInt(value)
+					await this.plugin.saveSettings()
+				}))
 
 		new Setting(containerEl)
 			.setName('Words blacklist')
-			.setDesc(`Block code execution that match these words (one per line)`)
+			.setDesc('Block code execution that match these words (one per line)')
 			.addTextArea(textArea => textArea
 				.setValue(this.plugin.settings.wordsBlacklist.join(os.EOL))
 				.onChange(async value => {
@@ -118,15 +118,15 @@ export default class SettingTab extends PluginSettingTab {
 
 		let envTextComponent: TextComponent
 		new Setting(containerEl)
-			.setName("Add env variable")
-			.setDesc("The key must correspond to code block type")
+			.setName('Add env variable')
+			.setDesc('The key must correspond to code block type')
 			.addText(text => {
 				envTextComponent = text
-				text.setPlaceholder("EXAMPLE_ENV_VAR")
+				text.setPlaceholder('EXAMPLE_ENV_VAR')
 			})
 			.addExtraButton(btn => btn
 				.setIcon('add')
-				.setTooltip("Add a env variable")
+				.setTooltip('Add a env variable')
 				.onClick(async () => {
 					const key = envTextComponent.getValue()
 					if (key.trim().length === 0) {
@@ -151,15 +151,15 @@ export default class SettingTab extends PluginSettingTab {
 
 		let langTextComponent: TextComponent
 		new Setting(containerEl)
-			.setName("Add new language support")
-			.setDesc("The key must correspond to code block type")
+			.setName('Add new language support')
+			.setDesc('The key must correspond to code block type')
 			.addText(text => {
 				langTextComponent = text
-				text.setPlaceholder("js|javascript")
+				text.setPlaceholder('js|javascript')
 			})
 			.addExtraButton(btn => btn
 				.setIcon('add')
-				.setTooltip("Add a new language")
+				.setTooltip('Add a new language')
 				.onClick(async () => {
 					const key = langTextComponent.getValue()
 					if (key.trim().length === 0) {
