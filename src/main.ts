@@ -167,8 +167,6 @@ export default class CommanderPlugin extends Plugin {
 
 				try {
 					await script.run()
-				} catch (err) {
-					console.log(err)
 				} finally {
 					this.runningScripts.splice(this.runningScripts.indexOf(script), 1)
 					runBtn.setDisabled(false)

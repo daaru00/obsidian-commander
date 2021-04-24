@@ -11,6 +11,7 @@ export interface PluginSettings {
 	enableStatusBarItem: boolean;
 	enableCopyButton: boolean;
 	enableOutputAutoClear: boolean;
+	enableAutoScroll: boolean;
 	outputMaxLines: number;
 	workingDirectory: string;
 	scriptTimeout: number;
@@ -26,6 +27,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	enableStatusBarItem: true,
 	enableCopyButton: true,
 	enableOutputAutoClear: false,
+	enableAutoScroll: true,
 	outputMaxLines: 50,
 	workingDirectory: os.tmpdir(),
 	scriptTimeout: 300,

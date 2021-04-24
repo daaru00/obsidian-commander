@@ -86,6 +86,7 @@ export default class OutputView extends ItemView {
 		this.outputElem.innerHTML += msg
 
 		this.checkMaxLines()
+		this.checkScroll()
 	}
 
 	checkMaxLines(): void {
@@ -97,5 +98,13 @@ export default class OutputView extends ItemView {
 
 		lines = lines.slice(overLimit - 1)
 		this.outputElem.innerHTML = lines.join('<br>')
+	}
+
+	checkScroll(): void {
+		if (!this.plugin.settings.enableAutoScroll) {
+			return
+		}
+
+		this.outputElem.scrollTop = this.outputElem.scrollHeight
 	}
 }
