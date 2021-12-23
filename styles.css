@@ -1,31 +1,15 @@
-.commander-block-relative{
-  position: relative;
-}
-
-.commander-block-relative .commander-execute-container{
-  position: absolute;
-  top: -10px;
-  right: 0;
-  opacity: 0;
-  transition-delay: 500ms;
-  transition: top 100ms, opacity 100ms;
-}
-
-.commander-execute-container{
-  z-index: 9;
-  right: 1em;
-  left: auto !important;
+.execute-code-button {
   margin: 5px;
-  cursor: pointer;
-}
-
-.commander-block-relative:hover .commander-execute-container{
+  padding: 5px;
+  color: var(--text-muted);
+  position: absolute;
   top: 0;
-  opacity: 1;
+  right: 3.5em;
+  display: none;
 }
 
-.commander-execute-container > button{
-  margin: auto;
+pre:hover > button.execute-code-button {
+  display: block;
 }
 
 .commander-header{

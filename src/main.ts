@@ -150,16 +150,14 @@ export default class CommanderPlugin extends Plugin {
 			script.setType(supportedLang.replace('language-', ''))
 
 			codeBlock.parentElement.parentElement.addClass('commander-block-relative')
-			codeBlock.parentElement.parentElement.appendChild(this.createWidget(script))
+			this.createButton(script, codeBlock.parentElement)
 		}
 	}
 
-	createWidget(script: Script): HTMLElement {
-		const widget = document.createElement('div')
-		widget.addClass('commander-execute-container')
-
-		const runBtn = new ButtonComponent(widget)
-			.setIcon('run')
+	createButton(script: Script, parent: HTMLElement): void {
+		const runBtn = new ButtonComponent(parent)
+			.setButtonText('Execute')
+			.setClass('execute-code-button')
 			.onClick(async () => {
 				runBtn.setDisabled(true)
 
@@ -172,16 +170,6 @@ export default class CommanderPlugin extends Plugin {
 					runBtn.setDisabled(false)
 				}
 			})
-
-		if (this.settings.enableCopyButton) {
-			new ButtonComponent(widget)
-				.setIcon('copy')
-				.onClick(() => {
-					navigator.clipboard.writeText(script.content)
-				})
-		}
-
-		return widget
 	}
 
 	stopAllRunningScripts(): void {

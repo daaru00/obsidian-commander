@@ -31,17 +31,6 @@ export default class SettingTab extends PluginSettingTab {
 			)
 
 		new Setting(containerEl)
-			.setName('Enable copy button')
-			.setDesc('Add a copy button to code blocks')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.enableCopyButton)
-				.onChange(async value => {
-					this.plugin.settings.enableCopyButton = value
-					await this.plugin.saveSettings()
-				})
-			)
-
-		new Setting(containerEl)
 			.setName('Enable automatic output clean')
 			.setDesc('Clear the output panel content before new executions')
 			.addToggle(toggle => toggle

@@ -9,7 +9,6 @@ export interface PluginLanguageSettings {
 
 export interface PluginSettings {
 	enableStatusBarItem: boolean;
-	enableCopyButton: boolean;
 	enableOutputAutoClear: boolean;
 	enableAutoScroll: boolean;
 	outputMaxLines: number;
@@ -25,7 +24,6 @@ export const FILE_PLACEHOLDER = '%FILE%'
 
 export const DEFAULT_SETTINGS: PluginSettings = {
 	enableStatusBarItem: true,
-	enableCopyButton: true,
 	enableOutputAutoClear: false,
 	enableAutoScroll: true,
 	outputMaxLines: 50,
